@@ -33,20 +33,20 @@ export async function Sidebar({ className }: SidebarProps) {
           <div className="space-y-1">
             <Link href="/playlist/morning">
                 <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <ListMusic className="h-4 w-4" />
-                    Morning Prep
-                </button>
-            </Link>
-             <Link href="/playlist/ceremony">
-                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
                     <Music className="h-4 w-4" />
-                    Ceremony
+                    Morning Prep
                 </button>
             </Link>
             <Link href="/playlist/brunch">
                 <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
                     <Music className="h-4 w-4" />
                     Brunch
+                </button>
+            </Link>
+             <Link href="/playlist/ceremony">
+                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
+                    <Music className="h-4 w-4" />
+                    Ceremony
                 </button>
             </Link>
             <Link href="/playlist/boat">
