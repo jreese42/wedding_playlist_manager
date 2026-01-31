@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       playlists: {
@@ -37,6 +37,7 @@ export interface Database {
           display_order?: number | null
           created_at?: string
         }
+        Relationships: []
       }
       tracks: {
         Row: {
@@ -81,6 +82,14 @@ export interface Database {
           added_by?: string | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "tracks_playlist_id_fkey"
+            columns: ["playlist_id"]
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       audit_log: {
         Row: {
@@ -107,7 +116,27 @@ export interface Database {
           details?: Json | null
           created_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_track_id_fkey"
+            columns: ["track_id"]
+            referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          }
+        ]
       }
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      [_ in never]: never
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
     }
   }
 }

@@ -1,7 +1,7 @@
 -- Project Schema for Wedding Playlist App
 
 -- Enable RLS
-alter table auth.users enable row level security;
+-- alter table auth.users enable row level security; -- (Commented out: requires superuser, usually already enabled)
 
 -- Playlists Table
 create table playlists (
@@ -51,4 +51,4 @@ create policy "Allow write access to authenticated users" on tracks for all usin
 
 alter table audit_log enable row level security;
 create policy "Allow read access to everyone" on audit_log for select using (true);
-create policy "Allow insert access to authenticated users" on audit_log for insert using (auth.role() = 'authenticated');
+create policy "Allow insert access to authenticated users" on audit_log for insert with check (auth.role() = 'authenticated');
