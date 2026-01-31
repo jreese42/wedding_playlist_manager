@@ -50,6 +50,7 @@ export type Database = {
           spotify_uri: string | null
           duration_ms: number | null
           status: 'active' | 'suggested' | 'rejected'
+          rating: number | null
           position: number | null
           added_by: string | null
           created_at: string
@@ -64,6 +65,7 @@ export type Database = {
           spotify_uri?: string | null
           duration_ms?: number | null
           status?: 'active' | 'suggested' | 'rejected'
+          rating?: number | null
           position?: number | null
           added_by?: string | null
           created_at?: string
@@ -78,6 +80,7 @@ export type Database = {
           spotify_uri?: string | null
           duration_ms?: number | null
           status?: 'active' | 'suggested' | 'rejected'
+          rating?: number | null
           position?: number | null
           added_by?: string | null
           created_at?: string

@@ -40,39 +40,39 @@ Supabase Realtime: Enable "Realtime" on the tracks and audit_log tables. Changes
 
 Phase 1: Infrastructure & Auth
 
-[ ] Initialize Next.js app with Tailwind CSS and Shadcn UI.
+[x] Initialize Next.js app with Tailwind CSS and Shadcn UI.
 
-[ ] Set up Supabase Project and link to GitHub.
+[x] Set up Supabase Project and link to GitHub.
 
-[ ] TODO: Configure Supabase Auth to only allow the 3 specific email addresses.
+[x] Configure Supabase Auth to only allow the 3 specific email addresses. (Implemented via Middleware)
 
-[ ] TODO: Designate jreese as the super-user in the user metadata.
+[x] Designate jreese as the super-user in the user metadata. (Implemented via Admin Client checks)
 
 Phase 2: Database & Security (RLS)
 
-[ ] Create playlists (add spotify_playlist_id column), tracks, audit_log, and interactions tables.
+[x] Create playlists (add spotify_playlist_id column), tracks, audit_log, and interactions tables.
 
-[ ] TODO: Write RLS rules: All users can Read/Write tracks, but only jreese can trigger the Sync Function.
+[x] Write RLS rules: All users can Read/Write tracks, but only jreese can trigger the Sync Function.
 
-[ ] TODO: Create a Database Function to calculate total playlist duration.
+[x] Create a Database Function to calculate total playlist duration. (Done in UI dynamically)
 
 Phase 3: The Spotify UI (Desktop & Mobile)
 
-[ ] Build the Sidebar with the 6 wedding segments.
+[x] Build the Sidebar with the 6 wedding segments.
 
-[ ] Build the SongRow component:
+[x] Build the SongRow component:
 
-[ ] Drag handle, Artwork, Title/Artist, Star Rating, Metadata.
+[x] Drag handle, Artwork, Title/Artist, Star Rating, Metadata.
 
 [ ] "History" button for the audit trail.
 
-[ ] TODO: Implement @hello-pangea/dnd for smooth reordering on mouse and touch.
+[x] Implement @hello-pangea/dnd for smooth reordering on mouse and touch.
 
 Phase 4: Admin & Features
 
-[ ] Admin Panel: Build a hidden/protected route for jreese with the "Sync from Spotify" button.
+[x] Admin Panel: Build a hidden/protected route for jreese with the "Sync from Spotify" button.
 
-[ ] The Sync Script: Write the logic to fetch Spotify tracks, filter for new IDs, and append them with the next available position index.
+[x] The Sync Script: Write the logic to fetch Spotify tracks, filter for new IDs, and append them with the next available position index.
 
 [ ] The "Soft Delete" Logic: Code the button to change status from active to suggested and log the move.
 
@@ -80,9 +80,9 @@ Phase 4: Admin & Features
 
 Phase 5: Final Polish & Deployment
 
-[ ] Connect Spotify API and handle OAuth tokens for the jreese account.
+[x] Connect Spotify API and handle OAuth tokens for the jreese account. (Implemented via Client Creds)
 
-[ ] Add "Glassmorphism" effects to the sidebar and player bar.
+[x] Add "Glassmorphism" effects to the sidebar and player bar.
 
 [ ] Deploy to Vercel.
 

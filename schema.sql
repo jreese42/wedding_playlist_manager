@@ -24,6 +24,7 @@ create table tracks (
   artwork_url text,
   spotify_uri text,
   duration_ms integer,
+  rating integer default 0,
   status text check (status in ('active', 'suggested', 'rejected')) default 'suggested',
   position integer, -- for ordering within the playlist
   added_by uuid references auth.users(id),

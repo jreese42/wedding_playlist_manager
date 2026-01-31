@@ -2,7 +2,7 @@ import { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Clock } from 'lucide-react'
-import { TrackRow } from '@/components/playlist/track-row'
+import { TrackList } from '@/components/playlist/track-list'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 
@@ -75,28 +75,30 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
             </div>
 
             {/* Content */}
-            <div className="bg-black/20 min-h-[500px] p-8 backdrop-blur-sm">
-                
-                {/* Table Header */}
-                <div className="grid grid-cols-[16px_4fr_3fr_minmax(120px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-400 uppercase tracking-wider mb-4 sticky top-0 bg-[#121212] z-10">
-                    <div className="text-right">#</div>
-                    <div>Title</div>
-                    <div>Album</div>
-                    <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
-                </div>
+            <div className="relative min-h-[500px]">
+                {/* Glass Background Layer */}
+                <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-0 pointer-events-none" />
 
-                {/* List */}
-                <div className="space-y-1">
-                    {tracks.map((track, i) => (
-                        <TrackRow key={track.id} track={track} index={i} />
-                    ))}
-                </div>
-
-                {tracks.length === 0 && (
-                     <div className="text-center py-20 text-zinc-500">
-                        No songs yet. Ask the admin to sync from Spotify!
+                {/* Content Layer */}
+                <div className="relative z-10 p-8">
+                    {/* Table Header */}
+                    <div className="grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-400 uppercase tracking-wider mb-4 sticky top-0 bg-[#121212] z-10">
+                        <div className="text-right">#</div>
+                        <div>Title</div>
+                        <div>Album</div>
+                        <div className="text-center">Rating</div>
+                        <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
                     </div>
-                )}
+
+                    {/* List */}
+                    <TrackList initialTracks={tracks} playlistId={playlist.id} />
+
+                    {tracks.length === 0 && (
+                         <div className="text-center py-20 text-zinc-500">
+                            No songs yet. Ask the admin to sync from Spotify!
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     )
