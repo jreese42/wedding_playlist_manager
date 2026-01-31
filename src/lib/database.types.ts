@@ -133,7 +133,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      reorder_track: {
+        Args: {
+          p_track_id: string
+          p_new_position: number
+          p_old_position: number
+          p_playlist_id: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -53,3 +53,39 @@ create policy "Allow write access to authenticated users" on tracks for all usin
 alter table audit_log enable row level security;
 create policy "Allow read access to everyone" on audit_log for select using (true);
 create policy "Allow insert access to authenticated users" on audit_log for insert with check (auth.role() = 'authenticated');
+
+-- Function to reorder tracks and log the change
+create or replace function reorder_track(
+  p_track_id uuid,
+  p_new_position int,
+  p_old_position int,
+  p_playlist_id uuid,
+  p_user_id uuid
+) returns void as $$
+begin
+  -- 1. Shift neighbors
+  if p_old_position < p_new_position then
+    -- Moving down (e.g. 1 -> 3). Shift 2,3 -> 1,2
+    update tracks 
+    set position = position - 1
+    where playlist_id = p_playlist_id
+      and position > p_old_position 
+      and position <= p_new_position;
+  elsif p_old_position > p_new_position then
+    -- Moving up (e.g. 3 -> 1). Shift 1,2 -> 2,3
+    update tracks 
+    set position = position + 1
+    where playlist_id = p_playlist_id
+      and position >= p_new_position 
+      and position < p_old_position;
+  end if;
+
+  -- 2. Update the target track
+  update tracks 
+  set position = p_new_position 
+  where id = p_track_id;
+
+  -- 3. Log to Audit
+  insert into audit_log (track_id, user_id, action, 'move', jsonb_build_object('from', p_old_position, 'to', p_new_position));
+end;
+$$ language plpgsql;
