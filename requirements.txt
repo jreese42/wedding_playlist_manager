@@ -1,0 +1,4 @@
+spotipy
+pyyaml
+python-frontmatter
+python-dotenv
