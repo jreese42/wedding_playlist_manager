@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Database } from '@/lib/database.types'
-import { Star } from 'lucide-react'
-import { updateRating } from '@/app/playlist/actions'
+import { Star, Trash2, Plus, RefreshCw } from 'lucide-react'
+import { updateRating, updateStatus } from '@/app/playlist/actions'
 
 type Track = Database['public']['Tables']['tracks']['Row']
 
@@ -14,6 +14,7 @@ interface TrackRowProps {
   draggableProps?: any
   innerRef?: (element: HTMLElement | null) => void
   isDragging?: boolean
+  isMainList?: boolean
 }
 
 function formatDuration(ms: number | null) {
@@ -64,17 +65,17 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
     )
 }
 
-export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging }: TrackRowProps) {
+export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true }: TrackRowProps) {
   return (
     <div 
         ref={innerRef}
         {...draggableProps}
         {...dragHandleProps}
-        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/10 rounded-md items-center transition-colors ${isDragging ? 'bg-white/20 shadow-lg' : ''}`}
+        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/10 rounded-md items-center transition-colors ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
         style={draggableProps?.style}
     >
       <div className="flex justify-center items-center w-4 text-right tabular-nums">
-        <span className="group-hover:hidden">{index + 1}</span>
+        <span className="group-hover:hidden">{isMainList ? index + 1 : '-'}</span>
         <button className="hidden group-hover:block text-white">
              {/* Simple Play Icon Placeholder */}
             <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
@@ -95,7 +96,11 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
         )}
         <div className="flex flex-col min-w-0 overflow-hidden">
           <span className="text-white font-medium truncate">{track.title}</span>
-          <span className="truncate group-hover:text-white transition-colors">{track.artist}</span>
+          <span className="truncate group-hover:text-white transition-colors">
+              {track.artist}
+              {track.status === 'rejected' && <span className="ml-2 text-xs text-red-500 font-bold uppercase">(Rejected)</span>}
+              {track.status === 'suggested' && !isMainList && <span className="ml-2 text-xs text-blue-400 font-bold uppercase">(Suggested)</span>}
+          </span>
         </div>
       </div>
 
@@ -109,8 +114,47 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
         <Rating trackId={track.id} rating={track.rating} />
       </div>
 
-      <div className="flex items-center justify-end font-variant-numeric tabular-nums">
-        {formatDuration(track.duration_ms)}
+      <div className="flex items-center justify-end font-variant-numeric tabular-nums gap-4">
+        <span>{formatDuration(track.duration_ms)}</span>
+        
+        {isMainList ? (
+            <button 
+                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"
+                title="Move to Suggestions"
+                onClick={(e) => {
+                    e.stopPropagation()
+                    // Soft delete to suggested
+                    updateStatus(track.id, 'suggested')
+                }}
+            >
+                <Trash2 className="w-4 h-4" />
+            </button>
+        ) : (
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button 
+                    className="text-zinc-500 hover:text-green-400"
+                    title="Add to Playlist"
+                    onClick={(e) => {
+                        e.stopPropagation()
+                        updateStatus(track.id, 'active')
+                    }}
+                >
+                    <Plus className="w-4 h-4" />
+                </button>
+                {track.status !== 'rejected' && (
+                    <button 
+                        className="text-zinc-500 hover:text-red-500"
+                        title="Reject Song"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            updateStatus(track.id, 'rejected')
+                        }}
+                    >
+                        <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
+            </div>
+        )}
       </div>
     </div>
   )

@@ -189,7 +189,7 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
                         artwork_url: track.album.images[0]?.url,
                         spotify_uri: spotify_uri,
                         duration_ms: track.duration_ms,
-                        status: 'suggested', // Default to suggested for new syncs? Or active? Plan says "Append-Only", maybe active? Let's say 'active' for initial sync.
+                        status: 'active', // Sync from Spotify is considered "Approved/Active" by default
                         position: currentPosition
                     })
                     currentPosition++;

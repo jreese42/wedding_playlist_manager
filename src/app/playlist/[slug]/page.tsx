@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { Clock } from 'lucide-react'
 import { TrackList } from '@/components/playlist/track-list'
+import { TrackRow } from '@/components/playlist/track-row'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 
@@ -31,13 +32,13 @@ async function getPlaylist(slug: string) {
     if (!playlist) return null
 
     // 2. Get tracks
-    const { data: tracks } = await supabase
+    const { data: allTracks } = await supabase
         .from('tracks')
         .select('*')
         .eq('playlist_id', playlist.id)
         .order('position', { ascending: true }) // Order by our custom position
     
-    return { playlist, tracks: tracks || [] }
+    return { playlist, tracks: allTracks || [] }
 }
 
 export default async function PlaylistPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -50,8 +51,11 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
 
     const { playlist, tracks } = data
     
+    const activeTracks = tracks.filter(t => t.status === 'active')
+    const inactiveTracks = tracks.filter(t => t.status !== 'active')
+    
     // Calculate total duration roughly
-    const totalDurationMs = tracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0)
+    const totalDurationMs = activeTracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0)
     const hours = Math.floor(totalDurationMs / 3600000)
     const minutes = Math.floor((totalDurationMs % 3600000) / 60000)
 
@@ -90,12 +94,29 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
                         <div className="flex justify-end"><Clock className="w-4 h-4" /></div>
                     </div>
 
-                    {/* List */}
-                    <TrackList initialTracks={tracks} playlistId={playlist.id} />
+                    {/* Active List */}
+                    <TrackList initialTracks={activeTracks} playlistId={playlist.id} />
 
-                    {tracks.length === 0 && (
+                    {activeTracks.length === 0 && (
                          <div className="text-center py-20 text-zinc-500">
-                            No songs yet. Ask the admin to sync from Spotify!
+                            No active songs. Check suggestions below!
+                        </div>
+                    )}
+
+                    {/* Suggestions & Rejected Section */}
+                    {inactiveTracks.length > 0 && (
+                        <div className="mt-12">
+                            <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
+                            <div className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
+                                {inactiveTracks.map((track, i) => (
+                                    <TrackRow 
+                                        key={track.id} 
+                                        track={track} 
+                                        index={i} 
+                                        isMainList={false}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     )}
                 </div>
