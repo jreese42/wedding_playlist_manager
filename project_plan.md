@@ -6,7 +6,7 @@ A high-level roadmap for building a Spotify-inspired wedding planning dashboard 
 
 Objective: A private, interactive dashboard to collaboratively curate, rank, and order 6 specific wedding playlists.
 
-Users: Admin (You), Sister (Dana), and Fiancé.
+Users: Admin (jreese), Sister (Dana), and Fiancé.
 
 Core Aesthetic: Spotify-clone UI (Dark mode, sidebar navigation, glassmorphism) with mobile-responsive design.
 
@@ -20,15 +20,21 @@ Trigger-based Logging: Instead of just updating a song, the app calls a single f
 
 History View: When a user clicks a song, the app queries audit_log where track_id = X, ordered by timestamp DESC.
 
-2. Spotify API Integration
+2. The "Sync" Engine (Admin Only)
 
-Client-Side Search: The search box hits a Next.js API Route.
+To bridge the gap between "Real" Spotify and the Web App:
 
-Server-Side Auth: The API route uses your CLIENT_ID and CLIENT_SECRET to get a temporary access token from Spotify to fetch song data/artwork.
+Manual Trigger: A protected button available only to jreese that triggers a sync script.
+
+Delta Sync Logic: The script fetches the current songs from the linked Spotify Playlist ID. It compares them against the database.
+
+Append-Only: Any song found on Spotify that is not in the web app database is added to the end of the list.
+
+Order Preservation: The script must not alter existing position indexes in the web app to avoid overwriting Dana's custom sorting.
 
 3. Real-Time Sync
 
-Supabase Realtime: We will enable "Realtime" on the tracks and audit_log tables. If you move a song, it will physically slide into the new position on Dana’s screen instantly.
+Supabase Realtime: Enable "Realtime" on the tracks and audit_log tables. Changes slide into position on other users' screens instantly.
 
 🛠 Phase-by-Phase TODO List
 
@@ -38,17 +44,17 @@ Phase 1: Infrastructure & Auth
 
 [ ] Set up Supabase Project and link to GitHub.
 
-[ ] TODO: Configure Supabase Auth to only allow 3 specific email addresses (Allow-list).
+[ ] TODO: Configure Supabase Auth to only allow the 3 specific email addresses.
 
-[ ] TODO: Create a "Login" landing page that matches the Spotify aesthetic.
+[ ] TODO: Designate jreese as the super-user in the user metadata.
 
 Phase 2: Database & Security (RLS)
 
-[ ] Create playlists, tracks, audit_log, and interactions tables.
+[ ] Create playlists (add spotify_playlist_id column), tracks, audit_log, and interactions tables.
 
-[ ] TODO: Write Postgres Row Level Security (RLS) rules so only authenticated users can edit.
+[ ] TODO: Write RLS rules: All users can Read/Write tracks, but only jreese can trigger the Sync Function.
 
-[ ] TODO: Create a "Database Function" to calculate total playlist duration across all active songs.
+[ ] TODO: Create a Database Function to calculate total playlist duration.
 
 Phase 3: The Spotify UI (Desktop & Mobile)
 
@@ -56,52 +62,44 @@ Phase 3: The Spotify UI (Desktop & Mobile)
 
 [ ] Build the SongRow component:
 
-[ ] Drag handle (left side).
+[ ] Drag handle, Artwork, Title/Artist, Star Rating, Metadata.
 
-[ ] Artwork + Title/Artist.
+[ ] "History" button for the audit trail.
 
-[ ] Star Rating (interactive).
+[ ] TODO: Implement @hello-pangea/dnd for smooth reordering on mouse and touch.
 
-[ ] Metadata (Duration, Spotify Link).
+Phase 4: Admin & Features
 
-[ ] "More Info" button (triggers History panel).
+[ ] Admin Panel: Build a hidden/protected route for jreese with the "Sync from Spotify" button.
 
-[ ] TODO: Implement "Mobile Mode": Switch from a table view to a stack view for better touch targets.
-
-[ ] TODO: Implement @hello-pangea/dnd for smooth reordering on both mouse and touch.
-
-Phase 4: Features & Business Logic
+[ ] The Sync Script: Write the logic to fetch Spotify tracks, filter for new IDs, and append them with the next available position index.
 
 [ ] The "Soft Delete" Logic: Code the button to change status from active to suggested and log the move.
 
-[ ] Spotify Search: Build the search input with "Type-to-search" debouncing (waits 300ms before hitting API).
-
-[ ] History Sidebar: Build a slide-out panel that displays a chronological feed of logs for a specific song.
+[ ] Spotify Search: Build the search input for manual additions.
 
 Phase 5: Final Polish & Deployment
 
-[ ] Connect Spotify API to fetch high-res album art.
+[ ] Connect Spotify API and handle OAuth tokens for the jreese account.
 
-[ ] Add "Glassmorphism" effects (blurred backgrounds) to the sidebar and player bar.
+[ ] Add "Glassmorphism" effects to the sidebar and player bar.
 
-[ ] Deploy to Vercel and verify environment variables.
-
-[ ] TODO: Performance test—ensure reordering 50+ songs doesn't lag the UI.
+[ ] Deploy to Vercel.
 
 📱 Mobile UX Specifics
 
-Touch Targets: Ensure the "Delete" and "Star" buttons are at least 44x44 pixels.
+Touch Targets: Buttons at least 44x44 pixels.
 
-Context Menus: On mobile, instead of a "More Info" button, consider a long-press or a simple "tap for details" to save screen real estate.
+Context Menus: Long-press or info-tap for the History panel on mobile.
 
-Duration Display: Total duration should be pinned to the top header so it's always visible while scrolling.
+Duration Display: Pinned to the top header.
 
 📈 Success Metrics (Requirements Check)
 
-[ ] Multi-User: Logs show "User X did Y".
+[ ] Admin Sync: jreese can pull in new songs from real Spotify playlists without ruining custom ordering.
 
-[ ] Audit Trail: Every reorder event is saved in the History panel.
+[ ] Multi-User Audit: Logs show "Dana moved SONG_NAME from pos 10 to 14".
 
-[ ] No Silent Deletions: "Deleted" songs appear in the Suggestions footer.
+[ ] No Silent Deletions: "Deleted" songs move to the Suggestions list automatically.
 
-[ ] Live Sync: Changes appear on other devices within <1 second.
+[ ] Live Sync: Instant updates across all active users.
