@@ -15,6 +15,7 @@ interface TrackRowProps {
   innerRef?: (element: HTMLElement | null) => void
   isDragging?: boolean
   isMainList?: boolean
+  playlistSpotifyId: string | null
 }
 
 function formatDuration(ms: number | null) {
@@ -65,7 +66,13 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
     )
 }
 
-export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true }: TrackRowProps) {
+export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true, playlistSpotifyId }: TrackRowProps) {
+  
+  const trackSpotifyId = track.spotify_uri?.split(':').pop()
+  const spotifyTrackUrl = track.spotify_uri && playlistSpotifyId 
+    ? `https://open.spotify.com/playlist/${playlistSpotifyId}?highlight=${encodeURIComponent(track.spotify_uri)}`
+    : `https://open.spotify.com/track/${track.spotify_uri?.split(':').pop()}`
+
   return (
     <div 
         ref={innerRef}
@@ -76,12 +83,18 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
     >
       <div className="flex justify-center items-center w-4 text-right tabular-nums">
         <span className="group-hover:hidden">{isMainList ? index + 1 : '-'}</span>
-        <button className="hidden group-hover:block text-white">
-             {/* Simple Play Icon Placeholder */}
-            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                <path d="M8 5v14l11-7z" />
-            </svg>
-        </button>
+        <a 
+          href={spotifyTrackUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()} // Prevent drag/row click events
+          className="hidden group-hover:block text-white"
+          title="Play on Spotify"
+        >
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+              <path d="M8 5v14l11-7z" />
+          </svg>
+        </a>
       </div>
       
       <div className="flex items-center gap-4 min-w-0">

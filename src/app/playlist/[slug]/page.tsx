@@ -95,7 +95,11 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
                     </div>
 
                     {/* Active List */}
-                    <TrackList initialTracks={activeTracks} playlistId={playlist.id} />
+                    <TrackList 
+                        initialTracks={activeTracks} 
+                        playlistId={playlist.id} 
+                        playlistSpotifyId={playlist.spotify_id} 
+                    />
 
                     {activeTracks.length === 0 && (
                          <div className="text-center py-20 text-zinc-500">
@@ -114,6 +118,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
                                         track={track} 
                                         index={i} 
                                         isMainList={false}
+                                        playlistSpotifyId={playlist.spotify_id}
                                     />
                                 ))}
                             </div>

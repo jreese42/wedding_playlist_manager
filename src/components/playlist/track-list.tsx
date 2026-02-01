@@ -11,9 +11,10 @@ type Track = Database['public']['Tables']['tracks']['Row']
 interface TrackListProps {
     initialTracks: Track[]
     playlistId: string
+    playlistSpotifyId: string | null
 }
 
-export function TrackList({ initialTracks, playlistId }: TrackListProps) {
+export function TrackList({ initialTracks, playlistId, playlistSpotifyId }: TrackListProps) {
     // We need to ensure we only render DnD on the client to avoid hydration mismatch
     const [enabled, setEnabled] = useState(false)
     const [tracks, setTracks] = useState(initialTracks)
@@ -63,7 +64,7 @@ export function TrackList({ initialTracks, playlistId }: TrackListProps) {
         return (
             <div className="space-y-1">
                 {tracks.map((track, i) => (
-                    <TrackRow key={track.id} track={track} index={i} />
+                    <TrackRow key={track.id} track={track} index={i} playlistSpotifyId={playlistSpotifyId} />
                 ))}
             </div>
         )
@@ -84,6 +85,7 @@ export function TrackList({ initialTracks, playlistId }: TrackListProps) {
                                     <TrackRow
                                         track={track}
                                         index={index}
+                                        playlistSpotifyId={playlistSpotifyId}
                                         innerRef={provided.innerRef}
                                         draggableProps={provided.draggableProps}
                                         dragHandleProps={provided.dragHandleProps}
