@@ -16,7 +16,7 @@ interface PlaylistViewProps {
 }
 
 export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
-    const [selectedTrackId, setSelectedTrackId] = useState<string | null>(null)
+    const [selectedTrack, setSelectedTrack] = useState<Track | null>(null)
     
     const activeTracks = tracks.filter(t => t.status === 'active')
     const inactiveTracks = tracks.filter(t => t.status !== 'active')
@@ -28,8 +28,8 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
     return (
         <div className="bg-gradient-to-b from-indigo-900/50 to-zinc-950 min-h-full pb-8">
             <HistoryPanel 
-                trackId={selectedTrackId} 
-                onClose={() => setSelectedTrackId(null)} 
+                track={selectedTrack} 
+                onClose={() => setSelectedTrack(null)} 
             />
 
             {/* Header */}
@@ -70,7 +70,7 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                         initialTracks={activeTracks} 
                         playlistId={playlist.id} 
                         playlistSpotifyId={playlist.spotify_id} 
-                        onSelectTrack={setSelectedTrackId}
+                        onSelectTrack={(trackId) => setSelectedTrack(tracks.find(t => t.id === trackId) || null)}
                     />
 
                     {activeTracks.length === 0 && (
@@ -91,7 +91,7 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                                         index={i} 
                                         isMainList={false}
                                         playlistSpotifyId={playlist.spotify_id}
-                                        onClick={() => setSelectedTrackId(track.id)}
+                                        onClick={() => setSelectedTrack(track)}
                                     />
                                 ))}
                             </div>

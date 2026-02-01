@@ -129,4 +129,22 @@ export async function addComment(trackId: string, comment: string) {
     revalidatePath('/playlist/[slug]', 'layout')
 }
 
+export async function pinComment(trackId: string, comment: string | null) {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    const { error } = await supabase.from('tracks')
+        .update({ pinned_comment: comment })
+        .eq('id', trackId)
+
+    if (error) {
+        console.error('Failed to pin comment:', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/playlist/[slug]', 'layout')
+}
+
 

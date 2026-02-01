@@ -66,7 +66,7 @@ Phase 3: The Spotify UI (Desktop & Mobile)
 
 [x] **History Panel**: Tapping a song slides open a right-side panel showing its audit log history.
 
-[ ] **Comments**: Track a list of comments by users on the tracks. Show these comments in the History panel. Allow a user to make a comment from in the history panel. The comments should be in line with other history, so we can see a scrolling log like "Dana commented I dont like this song" "Dana removed this song"
+[x] **Comments**: Track a list of comments by users on the tracks. Show these comments in the History panel. Allow a user to make a comment from in the history panel. The comments should be in line with other history, so we can see a scrolling log like "Dana commented I dont like this song" "Dana removed this song"
 
 [x] **Play Song**: A play button on each track opens the song in the external Spotify app via a URI. It should open to show the song selected within the playlist.
 
@@ -108,7 +108,7 @@ Phase 6: Optional Future Features
 
 [ ] More Clickable Links: When storing a track in the database, also store links to the artist so the artist name can be clickable and opens the artist profile in spotify.
 
-[ ] Pinned Comment: Allow for pinning one comment from the history of a song. When a comment is pinned, it should appear directly in the track view row without needing to open the activity panel. This is useful to clearly tag some songs with a short comment like 'First Dance Song'.
+[x] Pinned Comment: Allow for pinning one comment from the history of a song. When a comment is pinned, it should appear directly in the track view row without needing to open the activity panel. This is useful to clearly tag some songs with a short comment like 'First Dance Song'.
 
 [ ] Improve Homescreen: The current home screen is not very useful or beautiful. Improve it to be more elegant and useful.
 

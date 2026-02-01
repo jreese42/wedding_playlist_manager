@@ -52,6 +52,7 @@ export type Database = {
           status: 'active' | 'suggested' | 'rejected'
           rating: number | null
           position: number | null
+          pinned_comment: string | null
           added_by: string | null
           created_at: string
         }
@@ -67,6 +68,7 @@ export type Database = {
           status?: 'active' | 'suggested' | 'rejected'
           rating?: number | null
           position?: number | null
+          pinned_comment?: string | null
           added_by?: string | null
           created_at?: string
         }
@@ -82,6 +84,7 @@ export type Database = {
           status?: 'active' | 'suggested' | 'rejected'
           rating?: number | null
           position?: number | null
+          pinned_comment?: string | null
           added_by?: string | null
           created_at?: string
         }

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Database } from '@/lib/database.types'
-import { Star, Trash2, Plus, RefreshCw } from 'lucide-react'
+import { Star, Trash2, Plus, RefreshCw, Pin } from 'lucide-react'
 import { updateRating, updateStatus } from '@/app/playlist/actions'
 
 type Track = Database['public']['Tables']['tracks']['Row']
@@ -116,6 +116,14 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
               {track.status === 'rejected' && <span className="ml-2 text-xs text-red-500 font-bold uppercase">(Rejected)</span>}
               {track.status === 'suggested' && !isMainList && <span className="ml-2 text-xs text-blue-400 font-bold uppercase">(Suggested)</span>}
           </span>
+          {track.pinned_comment && (
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-300">
+                <Pin className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate italic">
+                    {track.pinned_comment}
+                </span>
+            </div>
+          )}
         </div>
       </div>
 

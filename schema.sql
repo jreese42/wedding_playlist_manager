@@ -27,6 +27,7 @@ create table tracks (
   rating integer default 0,
   status text check (status in ('active', 'suggested', 'rejected')) default 'suggested',
   position integer, -- for ordering within the playlist
+  pinned_comment text,
   added_by uuid references auth.users(id),
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );

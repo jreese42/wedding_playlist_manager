@@ -1,11 +1,14 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { X, History, Clock, User, MousePointerClick, MessageSquare } from 'lucide-react'
-import { getTrackHistory, addComment } from '@/app/playlist/actions'
+import { X, History, Clock, User, MousePointerClick, MessageSquare, Pin } from 'lucide-react'
+import { getTrackHistory, addComment, pinComment } from '@/app/playlist/actions'
+import { Database } from '@/lib/database.types'
+
+type Track = Database['public']['Tables']['tracks']['Row']
 
 interface HistoryPanelProps {
-    trackId: string | null
+    track: Track | null
     onClose: () => void
 }
 
@@ -17,16 +20,17 @@ type HistoryItem = {
     user_email: string
 }
 
-export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
+export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
     const [history, setHistory] = useState<HistoryItem[]>([])
     const [loading, setLoading] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
-    const [currentTrackId, setCurrentTrackId] = useState<string | null>(null)
+    const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+    const [isPending, startTransition] = useTransition()
 
     const fetchHistory = () => {
-        if (!trackId) return;
+        if (!currentTrack) return;
         setLoading(true)
-        getTrackHistory(trackId)
+        getTrackHistory(currentTrack.id)
             .then((data) => {
                 setHistory(data as HistoryItem[])
             })
@@ -35,27 +39,37 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
     }
 
     useEffect(() => {
-        if (trackId) {
-            setCurrentTrackId(trackId)
+        if (track) {
+            setCurrentTrack(track)
             
-            // Allow the component to mount in its hidden state first
             setTimeout(() => {
                 setIsOpen(true)
-            }, 10) // A tiny delay is all that's needed
+            }, 10)
 
             fetchHistory()
         } else {
             setIsOpen(false)
         }
-    }, [trackId])
+    }, [track, currentTrack])
 
+    const handlePin = (comment: string | null) => {
+        if (!currentTrack) return;
+
+        startTransition(async () => {
+            await pinComment(currentTrack.id, comment)
+            if (currentTrack) {
+                setCurrentTrack({ ...currentTrack, pinned_comment: comment })
+            }
+        })
+    }
+    
     const handleTransitionEnd = () => {
         if (!isOpen) {
-            setCurrentTrackId(null)
+            setCurrentTrack(null)
         }
     }
 
-    if (!currentTrackId) return null
+    if (!currentTrack) return null
 
     return (
         <>
@@ -94,7 +108,7 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                         </div>
                     ) : (
                         history.map((item) => (
-                            <div key={item.id} className="relative pl-6 border-l border-zinc-700 pb-4 last:pb-0">
+                            <div key={item.id} className="relative group pl-6 border-l border-zinc-700 pb-4 last:pb-0">
                                 <div className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-[#18181b] flex items-center justify-center">
                                     <ActionIcon action={item.action} />
                                 </div>
@@ -103,16 +117,26 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                                     <div className="text-sm text-zinc-300">
                                         <FormatDetails action={item.action} details={item.details} />
                                     </div>
-                                    <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                        <div className="flex items-center gap-1">
-                                            <User className="w-3 h-3" />
-                                            <span>{item.user_email}</span>
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                            <div className="flex items-center gap-1">
+                                                <User className="w-3 h-3" />
+                                                <span>{item.user_email}</span>
+                                            </div>
+                                            <span>•</span>
+                                            <div className="flex items-center gap-1">
+                                                <Clock className="w-3 h-3" />
+                                                <span>{new Date(item.created_at).toLocaleString()}</span>
+                                            </div>
                                         </div>
-                                        <span>•</span>
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            <span>{new Date(item.created_at).toLocaleString()}</span>
-                                        </div>
+                                        {item.action === 'comment' && (
+                                            <button 
+                                                onClick={() => handlePin(item.details.comment === currentTrack.pinned_comment ? null : item.details.comment)}
+                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-indigo-400"
+                                            >
+                                                <Pin className={`w-3.5 h-3.5 ${item.details.comment === currentTrack.pinned_comment ? 'fill-indigo-400' : ''}`} />
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                             </div>
@@ -120,7 +144,7 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                     )}
                 </div>
 
-                <CommentForm trackId={currentTrackId} onCommentAdded={fetchHistory} />
+                <CommentForm trackId={currentTrack.id} onCommentAdded={fetchHistory} />
             </div>
         </>
     )
