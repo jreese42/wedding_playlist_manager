@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from 'react'
 import { Database } from '@/lib/database.types'
-import { Star, Trash2, Plus, RefreshCw, Pin } from 'lucide-react'
-import { updateRating, updateStatus } from '@/app/playlist/actions'
+import { Star, Trash2, Plus, RefreshCw, Pin, Trash } from 'lucide-react'
+import { updateRating, updateStatus, deleteTrack } from '@/app/playlist/actions'
 
 type Track = Database['public']['Tables']['tracks']['Row']
 
@@ -17,6 +17,7 @@ interface TrackRowProps {
   isMainList?: boolean
   playlistSpotifyId: string | null
   onClick?: () => void
+  isAdmin?: boolean
 }
 
 function formatDuration(ms: number | null) {
@@ -67,7 +68,7 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
     )
 }
 
-export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true, playlistSpotifyId, onClick }: TrackRowProps) {
+export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true, playlistSpotifyId, onClick, isAdmin }: TrackRowProps) {
   
   const trackSpotifyId = track.spotify_uri?.split(':').pop()
   const spotifyTrackUrl = track.spotify_uri && playlistSpotifyId 
@@ -199,6 +200,20 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
                         }}
                     >
                         <Trash2 className="w-4 h-4" />
+                    </button>
+                )}
+                {isAdmin && (
+                    <button 
+                        className="text-zinc-500 hover:text-red-700"
+                        title="Permanently Delete"
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            if (window.confirm('Are you sure you want to permanently delete this track?')) {
+                                deleteTrack(track.id)
+                            }
+                        }}
+                    >
+                        <Trash className="w-4 h-4" />
                     </button>
                 )}
             </div>

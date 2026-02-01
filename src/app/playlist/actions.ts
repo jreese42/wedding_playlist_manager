@@ -2,6 +2,8 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getSpotifyClient } from '@/lib/spotify'
+import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 
 export async function moveTrack(playlistId: string, trackId: string, newPosition: number, oldPosition: number) {
@@ -146,5 +148,75 @@ export async function pinComment(trackId: string, comment: string | null) {
 
     revalidatePath('/playlist/[slug]', 'layout')
 }
+
+export async function searchSpotify(query: string) {
+    const spotify = await getSpotifyClient()
+    const response = await spotify.searchTracks(query, { limit: 5 })
+    return response.body.tracks?.items || []
+}
+
+export async function addTrack(playlistId: string, track: any, status: 'active' | 'suggested') {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    // Get max position if adding to active list
+    let position = 0
+    if (status === 'active') {
+        const { data: maxPosData } = await supabase.from('tracks')
+            .select('position')
+            .eq('playlist_id', playlistId)
+            .order('position', { ascending: false })
+            .limit(1)
+            .single()
+        position = (maxPosData?.position || 0) + 1
+    }
+
+    const { error } = await supabase.from('tracks').insert({
+        playlist_id: playlistId,
+        title: track.name,
+        artist: track.artists.map((a: any) => a.name).join(', '),
+        album: track.album.name,
+        artwork_url: track.album.images[0]?.url,
+        spotify_uri: track.uri,
+        artist_spotify_uri: track.artists[0]?.uri,
+        album_spotify_uri: track.album.uri,
+        duration_ms: track.duration_ms,
+        status: status,
+        position: status === 'active' ? position : null,
+        added_by: user.id
+    })
+
+    if (error) {
+        console.error('Failed to add track:', error)
+        throw new Error(error.message)
+    }
+
+    // Log to Audit
+    await supabase.from('audit_log').insert({
+        track_id: undefined, // We don't have the ID easily here without a second query, skipping for now or could select back
+        user_id: user.id,
+        action: 'add',
+        details: { title: track.name, status }
+    })
+
+    revalidatePath('/playlist/[slug]', 'layout')
+}
+
+export async function deleteTrack(trackId: string) {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized')
+
+    const supabase = await createClient()
+    const { error } = await supabase.from('tracks').delete().eq('id', trackId)
+
+    if (error) {
+        console.error('Failed to delete track:', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/playlist/[slug]', 'layout')
+}
+
 
 

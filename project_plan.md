@@ -64,17 +64,17 @@ Phase 3: The Spotify UI (Desktop & Mobile)
 
 [x] Drag handle, Artwork, Title/Artist, Star Rating, Metadata.
 
-[x] **History Panel**: Tapping a song slides open a right-side panel showing its audit log history.
+[x] History Panel: Tapping a song slides open a right-side panel showing its audit log history.
 
-[x] **Comments**: Track a list of comments by users on the tracks. Show these comments in the History panel. Allow a user to make a comment from in the history panel. The comments should be in line with other history, so we can see a scrolling log like "Dana commented I dont like this song" "Dana removed this song"
+[x] Comments: Track a list of comments by users on the tracks. Show these comments in the History panel. Allow a user to make a comment from in the history panel. The comments should be in line with other history, so we can see a scrolling log like "Dana commented I dont like this song" "Dana removed this song"
 
-[x] **Play Song**: A play button on each track opens the song in the external Spotify app via a URI. It should open to show the song selected within the playlist.
+[x] Play Song: A play button on each track opens the song in the external Spotify app via a URI. It should open to show the song selected within the playlist.
 
 [ ] **Notifications Panel**: Add a notifications panel, present a review of ALL recent events across all songs to allow for quick catch up with additions, deletions, reordering, and comments.
 
 [ ] **Display Who Added or Suggested By User**: In the track view, display which user added or suggested the song originally. Note the connection with the AI Assistant feature, there is one bonus valid "user" which is that it was suggested by the AI Assistant.
 
-[ ] Real User Names: Modify the user list to allow for adding a real name, which is used in display instead of the user login. So I can show 'Dana', 'Kyle', or 'James' in Activity History and 'Who added this song' views.
+[ ] **Real User Names**: Modify the user list to allow for adding a real name, which is used in display instead of the user login. So I can show 'Dana', 'Kyle', or 'James' in Activity History and 'Who added this song' views.
 
 [x] Implement @hello-pangea/dnd for smooth reordering on mouse and touch.
 
@@ -86,7 +86,7 @@ Phase 4: Admin & Features
 
 [x] The "Soft Delete" Logic: Code the button to change status from active to suggested and log the move.
 
-[ ] Spotify Search: Build the search input for manual additions. This appears as a search bar underneat the song list but above the Suggestions list. Searching there will search spotify and present the top song options. Tapping one will add that song to the song list at the bottom. Tapping 
+[x] **Spotify Search**: Build the search input for manual additions. This appears as a search bar underneat the song list but above the Suggestions list. Searching there will search spotify and present the top song options. Tapping one will add that song to the song list at the bottom. Tapping 
 
 Phase 5: Final Polish & Deployment
 
@@ -98,7 +98,7 @@ Phase 5: Final Polish & Deployment
 
 Phase 6: Optional Future Features
 
-[ ] **Publish Playlists**: A sidebar button that pushes the current playlist order to the real Spotify playlist. This action first syncs from Spotify, adding any new remote tracks as 'suggestions' to avoid data loss, then overwrites the Spotify playlist with the app's tracklist and order. his is a button in the left sidebar which will cause the playlists to be published out to Spotify. Important: when this happens, it should then automatically sync the playlist back. This takes the webapp song list and outputs it to the spotify playlist. If songs exist in the real spotify playlist but not in song list, it should automatically pull those in as suggestions first so they are not lost.
+[ ] **Publish Playlists Button**: A sidebar button that pushes the current playlist order to the real Spotify playlist. This action first syncs from Spotify, adding any new remote tracks as 'suggestions' to avoid data loss, then overwrites the Spotify playlist with the app's tracklist and order. his is a button in the left sidebar which will cause the playlists to be published out to Spotify. Important: when this happens, it should then automatically sync the playlist back. This takes the webapp song list and outputs it to the spotify playlist. If songs exist in the real spotify playlist but not in song list, it should automatically pull those in as suggestions first so they are not lost.
 
 [ ] **Publish Playlists Automatically**: Extend upon the Publish Playlists optional feautre so that this process is entirely automatic. Periodically while the page is loaded, fetch the playlist from spotify and update the database. Any 'new' items in spotify not in the database already should be marked as suggested. Then, automatically publish the playlist back out to spotify any time it changes including ordering or song list. Be careful to avoid data loss as a result of pushing songs to the list and overwriting without having immediately synced inward before. This should also perform an infrequent update of the playlist metadata like name, artwork, description, etc. 
 
@@ -106,11 +106,20 @@ Phase 6: Optional Future Features
 
 [ ] **Page Tour Onboarding**: Add an onboarding feature the first time a user logs in that shows a page tour. Explain to the user how to see playlists, reorder add and remove songs, review recommendations, use the AI assistant, and rate songs. Include a button to trigger the tour again.
 
-[ ] More Clickable Links: When storing a track in the database, also store links to the artist so the artist name can be clickable and opens the artist profile in spotify.
+[x] More Clickable Links: When storing a track in the database, also store links to the artist so the artist name can be clickable and opens the artist profile in spotify.
 
 [x] Pinned Comment: Allow for pinning one comment from the history of a song. When a comment is pinned, it should appear directly in the track view row without needing to open the activity panel. This is useful to clearly tag some songs with a short comment like 'First Dance Song'.
 
-[ ] Improve Homescreen: The current home screen is not very useful or beautiful. Improve it to be more elegant and useful.
+[x] Improve Homescreen: The current home screen is not very useful or beautiful. Improve it to be more elegant and useful.
+
+Phase 7: Project Reusability Readiness
+[ ] Support Login with Spotify
+
+[ ] Support an editor for adding and managing playlists. Adding a playlist prompts for a Spotify URI to connect that playlist to, and automatically fetches the data from it. It creates a new page for that playlist. The list of playlists in the homepage and navigation bar are now dynamic as playlists can be added and removed. This allows for adding new playlists and a clear system for setting up this webapp and populating it with data by loading playlists IDs in through the UX.
+
+[ ] Application Config Page - In the admin settings, allow for configurint variou settings about the application. This include the webpage tabbar title, the text at the top of the homepage, and more.
+
+[ ] Licenses page - if needed, include a link on the page to load a modal showing license information.
 
 📱 Mobile UX Specifics
 

@@ -2,6 +2,7 @@ import { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
 import { notFound } from 'next/navigation'
 import { PlaylistView } from '@/components/playlist/playlist-view'
+import { checkIfAdmin } from '@/lib/auth/helpers'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 
@@ -59,6 +60,7 @@ async function getPlaylist(slug: string) {
 export default async function PlaylistPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params
     const data = await getPlaylist(slug)
+    const isAdmin = await checkIfAdmin()
     
     if (!data) {
         notFound()
@@ -67,6 +69,6 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
     const { playlist, tracks } = data
     
     return (
-        <PlaylistView playlist={playlist} tracks={tracks} />
+        <PlaylistView playlist={playlist} tracks={tracks} isAdmin={isAdmin} />
     )
 }

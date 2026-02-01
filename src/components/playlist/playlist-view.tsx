@@ -6,6 +6,7 @@ import { Clock } from 'lucide-react'
 import { TrackList } from '@/components/playlist/track-list'
 import { TrackRow } from '@/components/playlist/track-row'
 import { HistoryPanel } from '@/components/playlist/history-panel'
+import { SpotifySearch } from '@/components/playlist/spotify-search'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row']
@@ -13,9 +14,10 @@ type Track = Database['public']['Tables']['tracks']['Row']
 interface PlaylistViewProps {
     playlist: Playlist
     tracks: Track[]
+    isAdmin: boolean
 }
 
-export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
+export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const [selectedTrack, setSelectedTrack] = useState<Track | null>(null)
     
     const activeTracks = tracks.filter(t => t.status === 'active')
@@ -73,6 +75,14 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                         onSelectTrack={(trackId) => setSelectedTrack(tracks.find(t => t.id === trackId) || null)}
                     />
 
+                    <div className="mt-4">
+                        <SpotifySearch 
+                            playlistId={playlist.id} 
+                            status="active" 
+                            placeholder="Add a song to this playlist..."
+                        />
+                    </div>
+
                     {activeTracks.length === 0 && (
                          <div className="text-center py-20 text-zinc-500">
                             No active songs. Check suggestions below!
@@ -80,9 +90,18 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                     )}
 
                     {/* Suggestions & Rejected Section */}
-                    {inactiveTracks.length > 0 && (
-                        <div className="mt-12">
-                            <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
+                    <div className="mt-12">
+                        <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
+                        
+                        <div className="px-4 mb-4">
+                            <SpotifySearch 
+                                playlistId={playlist.id} 
+                                status="suggested" 
+                                placeholder="Suggest a song..."
+                            />
+                        </div>
+
+                        {inactiveTracks.length > 0 && (
                             <div className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
                                 {inactiveTracks.map((track, i) => (
                                     <TrackRow 
@@ -92,11 +111,12 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                                         isMainList={false}
                                         playlistSpotifyId={playlist.spotify_id}
                                         onClick={() => setSelectedTrack(track)}
+                                        isAdmin={isAdmin}
                                     />
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
