@@ -81,153 +81,256 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
   const albumSpotifyUrl = track.album_spotify_uri ? `https://open.spotify.com/album/${track.album_spotify_uri.split(':').pop()}` : '#'
 
   return (
-    <div 
-        ref={innerRef}
-        {...draggableProps}
-        {...dragHandleProps}
-        onClick={onClick}
-        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
-        style={draggableProps?.style}
-        data-tour={isMainList ? "track-row" : undefined}
-    >
-      <div className="flex justify-center items-center w-4 text-right tabular-nums">
-        <span className="group-hover:hidden">{isMainList ? index + 1 : '-'}</span>
-        <a 
-          href={spotifyTrackUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()} // Prevent drag/row click events
-          className="hidden group-hover:block text-white"
-          title="Play on Spotify"
-        >
-          <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-              <path d="M8 5v14l11-7z" />
-          </svg>
-        </a>
-      </div>
-      
-      <div className="flex items-center gap-4 min-w-0">
-        {track.artwork_url ? (
-            <img 
-                src={track.artwork_url} 
-                alt={track.album || 'Album Art'} 
-                className="h-10 w-10 rounded shadow object-cover flex-shrink-0"
-            />
-        ) : (
-            <div className="h-10 w-10 bg-zinc-800 rounded flex-shrink-0" />
-        )}
-        <div className="flex flex-col min-w-0 overflow-hidden">
+    <>
+      {/* Desktop View */}
+      <div 
+          ref={innerRef}
+          {...draggableProps}
+          {...dragHandleProps}
+          onClick={onClick}
+          className={`group hidden md:grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
+          style={draggableProps?.style}
+          data-tour={isMainList ? "track-row" : undefined}
+      >
+        <div className="flex justify-center items-center w-4 text-right tabular-nums">
+          <span className="group-hover:hidden">{isMainList ? index + 1 : '-'}</span>
           <a 
             href={spotifyTrackUrl}
             target="_blank"
             rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="text-white font-medium truncate hover:underline"
+            onClick={(e) => e.stopPropagation()} // Prevent drag/row click events
+            className="hidden group-hover:block text-white"
+            title="Play on Spotify"
           >
-            {track.title}
+            <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                <path d="M8 5v14l11-7z" />
+            </svg>
           </a>
-          <span className="truncate group-hover:text-white transition-colors">
-              <a 
-                href={artistSpotifyUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => e.stopPropagation()}
-                className="hover:underline"
-              >
-                {track.artist}
-              </a>
-              {track.status === 'rejected' && <span className="ml-2 text-xs text-red-500 font-bold uppercase">(Rejected)</span>}
-              {track.status === 'suggested' && !isMainList && <span className="ml-2 text-xs text-blue-400 font-bold uppercase">(Suggested)</span>}
-          </span>
-          {track.pinned_comment && (
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-300">
-                <Pin className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate italic">
-                    {track.pinned_comment}
-                </span>
-            </div>
+        </div>
+        
+        <div className="flex items-center gap-4 min-w-0">
+          {track.artwork_url ? (
+              <img 
+                  src={track.artwork_url} 
+                  alt={track.album || 'Album Art'} 
+                  className="h-10 w-10 rounded shadow object-cover flex-shrink-0"
+              />
+          ) : (
+              <div className="h-10 w-10 bg-zinc-800 rounded flex-shrink-0" />
           )}
-          {track.profiles && (
-            <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-400">
-                <UserAvatar profile={track.profiles} />
-            </div>
+          <div className="flex flex-col min-w-0 overflow-hidden">
+            <a 
+              href={spotifyTrackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-white font-medium truncate hover:underline"
+            >
+              {track.title}
+            </a>
+            <span className="truncate group-hover:text-white transition-colors">
+                <a 
+                  href={artistSpotifyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="hover:underline"
+                >
+                  {track.artist}
+                </a>
+                {track.status === 'rejected' && <span className="ml-2 text-xs text-red-500 font-bold uppercase">(Rejected)</span>}
+                {track.status === 'suggested' && !isMainList && <span className="ml-2 text-xs text-blue-400 font-bold uppercase">(Suggested)</span>}
+            </span>
+            {track.pinned_comment && (
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-indigo-300">
+                  <Pin className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate italic">
+                      {track.pinned_comment}
+                  </span>
+              </div>
+            )}
+            {track.profiles && (
+              <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-400">
+                  <UserAvatar profile={track.profiles} />
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center truncate min-w-0">
+          <a 
+            href={albumSpotifyUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="truncate group-hover:text-white transition-colors hover:underline"
+          >
+              {track.album}
+          </a>
+        </div>
+
+        <div className="flex items-center justify-center">
+          <Rating trackId={track.id} rating={track.rating} />
+        </div>
+
+        <div className="flex items-center justify-end font-variant-numeric tabular-nums gap-4">
+          <span>{formatDuration(track.duration_ms)}</span>
+          
+          {isMainList ? (
+              <button 
+                  className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"
+                  title="Move to Suggestions"
+                  onClick={(e) => {
+                      e.stopPropagation()
+                      // Soft delete to suggested
+                      updateStatus(track.id, 'suggested')
+                  }}
+              >
+                  <Trash2 className="w-4 h-4" />
+              </button>
+          ) : (
+              <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button 
+                      className="text-zinc-500 hover:text-green-400"
+                      title="Add to Playlist"
+                      onClick={(e) => {
+                          e.stopPropagation()
+                          updateStatus(track.id, 'active')
+                      }}
+                  >
+                      <Plus className="w-4 h-4" />
+                  </button>
+                  {track.status !== 'rejected' && (
+                      <button 
+                          className="text-zinc-500 hover:text-red-500"
+                          title="Reject Song"
+                          onClick={(e) => {
+                              e.stopPropagation()
+                              updateStatus(track.id, 'rejected')
+                          }}
+                      >
+                          <Trash2 className="w-4 h-4" />
+                      </button>
+                  )}
+                  {isAdmin && (
+                      <button 
+                          className="text-zinc-500 hover:text-red-700"
+                          title="Permanently Delete"
+                          onClick={(e) => {
+                              e.stopPropagation()
+                              if (window.confirm('Are you sure you want to permanently delete this track?')) {
+                                  deleteTrack(track.id)
+                              }
+                          }}
+                      >
+                          <Trash className="w-4 h-4" />
+                      </button>
+                  )}
+              </div>
           )}
         </div>
       </div>
 
-      <div className="flex items-center truncate min-w-0">
-        <a 
-          href={albumSpotifyUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => e.stopPropagation()}
-          className="truncate group-hover:text-white transition-colors hover:underline"
-        >
-            {track.album}
-        </a>
-      </div>
-
-      <div className="flex items-center justify-center">
-        <Rating trackId={track.id} rating={track.rating} />
-      </div>
-
-      <div className="flex items-center justify-end font-variant-numeric tabular-nums gap-4">
-        <span>{formatDuration(track.duration_ms)}</span>
-        
-        {isMainList ? (
-            <button 
-                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-red-500"
-                title="Move to Suggestions"
-                onClick={(e) => {
-                    e.stopPropagation()
-                    // Soft delete to suggested
-                    updateStatus(track.id, 'suggested')
-                }}
+      {/* Mobile View */}
+      <div 
+        ref={innerRef}
+        {...draggableProps}
+        {...dragHandleProps}
+        onClick={onClick}
+        className={`md:hidden group flex flex-col gap-2 px-3 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
+        style={draggableProps?.style}
+      >
+        {/* Mobile Header with Image and Title */}
+        <div className="flex items-start gap-3">
+          {track.artwork_url ? (
+            <img 
+              src={track.artwork_url}
+              alt={track.album || 'Album Art'} 
+              className="h-10 w-10 rounded shadow object-cover flex-shrink-0"
+            />
+          ) : (
+            <div className="h-10 w-10 bg-zinc-800 rounded flex-shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <a 
+              href={spotifyTrackUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-white font-medium text-sm line-clamp-2 hover:underline"
             >
-                <Trash2 className="w-4 h-4" />
+              {track.title}
+            </a>
+            <a 
+              href={artistSpotifyUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="text-zinc-400 text-xs truncate hover:text-white hover:underline"
+            >
+              {track.artist}
+            </a>
+          </div>
+        </div>
+        
+        {/* Mobile Footer */}
+        <div className="flex items-center justify-between">
+          <Rating trackId={track.id} rating={track.rating} />
+          
+          {isMainList ? (
+            <button 
+              className="text-zinc-500 hover:text-red-500"
+              title="Move to Suggestions"
+              onClick={(e) => {
+                e.stopPropagation()
+                updateStatus(track.id, 'suggested')
+              }}
+            >
+              <Trash2 className="w-4 h-4" />
             </button>
-        ) : (
-            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+          ) : (
+            <div className="flex items-center gap-1">
+              <button 
+                className="text-zinc-500 hover:text-green-400"
+                title="Add to Playlist"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  updateStatus(track.id, 'active')
+                }}
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              {track.status !== 'rejected' && (
                 <button 
-                    className="text-zinc-500 hover:text-green-400"
-                    title="Add to Playlist"
-                    onClick={(e) => {
-                        e.stopPropagation()
-                        updateStatus(track.id, 'active')
-                    }}
+                  className="text-zinc-500 hover:text-red-500"
+                  title="Reject Song"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    updateStatus(track.id, 'rejected')
+                  }}
                 >
-                    <Plus className="w-4 h-4" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
-                {track.status !== 'rejected' && (
-                    <button 
-                        className="text-zinc-500 hover:text-red-500"
-                        title="Reject Song"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            updateStatus(track.id, 'rejected')
-                        }}
-                    >
-                        <Trash2 className="w-4 h-4" />
-                    </button>
-                )}
-                {isAdmin && (
-                    <button 
-                        className="text-zinc-500 hover:text-red-700"
-                        title="Permanently Delete"
-                        onClick={(e) => {
-                            e.stopPropagation()
-                            if (window.confirm('Are you sure you want to permanently delete this track?')) {
-                                deleteTrack(track.id)
-                            }
-                        }}
-                    >
-                        <Trash className="w-4 h-4" />
-                    </button>
-                )}
+              )}
+              {isAdmin && (
+                <button 
+                  className="text-zinc-500 hover:text-red-700"
+                  title="Permanently Delete"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (window.confirm('Are you sure you want to permanently delete this track?')) {
+                      deleteTrack(track.id)
+                    }
+                  }}
+                >
+                  <Trash className="w-4 h-4" />
+                </button>
+              )}
             </div>
-        )}
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }
 

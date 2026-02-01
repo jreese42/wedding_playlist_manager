@@ -78,7 +78,7 @@ export function SpotifySearch({ playlistId, status, placeholder }: SpotifySearch
     }
 
     return (
-        <div ref={containerRef} className="relative mb-6 max-w-xl mx-auto">
+        <div ref={containerRef} className="relative mb-4 md:mb-6 w-full md:max-w-xl mx-auto">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                 <input

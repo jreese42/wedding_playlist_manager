@@ -5,6 +5,9 @@ import { PlaylistView } from '@/components/playlist/playlist-view'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
+type Track = Database['public']['Tables']['tracks']['Row'] & {
+    profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_color'> | null
+}
 
 async function getPlaylist(slug: string) {
     const supabase = await createClient()
@@ -61,9 +64,9 @@ async function getPlaylist(slug: string) {
     }
 
     // 3. Fetch profile data for all tracks
-    let enrichedTracks = allTracks || []
-    if (enrichedTracks.length > 0) {
-        const userIds = enrichedTracks
+    let enrichedTracks: Track[] = []
+    if (allTracks && allTracks.length > 0) {
+        const userIds = allTracks
             .map((t: any) => t.added_by)
             .filter((id: any) => id !== null && id !== undefined)
             .filter((v: any, i: any, a: any) => a.indexOf(v) === i) // deduplicate
@@ -75,9 +78,15 @@ async function getPlaylist(slug: string) {
                 .in('id', userIds)
             
             const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
-            enrichedTracks = enrichedTracks.map((track: any) => ({
+            enrichedTracks = allTracks.map((track: any) => ({
                 ...track,
                 profiles: track.added_by ? profileMap.get(track.added_by) : null
+            }))
+        } else {
+            // No user IDs to fetch, but still need to add null profiles
+            enrichedTracks = allTracks.map((track: any) => ({
+                ...track,
+                profiles: null
             }))
         }
     }

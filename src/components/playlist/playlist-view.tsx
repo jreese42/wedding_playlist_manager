@@ -11,7 +11,9 @@ import { SyncStatus } from '@/components/playlist/sync-status'
 import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
-type Track = Database['public']['Tables']['tracks']['Row']
+type Track = Database['public']['Tables']['tracks']['Row'] & {
+    profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_color'> | null
+}
 
 interface PlaylistViewProps {
     playlist: Playlist
@@ -55,23 +57,25 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
             />
 
             {/* Header */}
-            <div className="flex items-end gap-6 p-8 pb-6" data-tour="playlist-header">
-                <div className="h-52 w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-6xl font-bold text-white/20 select-none">
+            <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 p-4 md:p-8 md:pb-6 pt-16 md:pt-0" data-tour="playlist-header">
+                <div className="h-40 md:h-52 w-40 md:w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-4xl md:text-6xl font-bold text-white/20 select-none flex-shrink-0">
                     {playlist.title.charAt(0)}
                 </div>
-                <div className="flex flex-col gap-3 flex-1">
+                <div className="flex flex-col gap-3 flex-1 w-full md:w-auto">
                     <span className="text-xs font-bold uppercase tracking-wider text-white">Playlist</span>
-                    <h1 className="text-7xl font-black text-white tracking-tight">{playlist.title}</h1>
-                    <div className="flex items-center gap-2 text-sm text-zinc-300 font-medium">
-                        <span className="text-white">{playlist.vibe}</span>
-                        <span>•</span>
-                        <span>{tracks.length} songs, {hours} hr {minutes} min</span>
+                    <h1 className="text-3xl md:text-7xl font-black text-white tracking-tight break-words">{playlist.title}</h1>
+                    <div className="flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-zinc-300 font-medium">
+                            <span className="text-white">{playlist.vibe}</span>
+                            <span>•</span>
+                            <span>{tracks.length} songs, {hours} hr {minutes} min</span>
+                        </div>
                         {playlist.spotify_id && (
                             <a
                                 href={`https://open.spotify.com/playlist/${playlist.spotify_id}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/30 rounded transition-colors"
+                                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/30 rounded transition-colors w-fit"
                                 title="View on Spotify"
                             >
                                 <span>•</span>
@@ -80,7 +84,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                             </a>
                         )}
                     </div>
-                    <p className="text-zinc-400 max-w-2xl mt-1 text-sm">{playlist.description}</p>
+                    <p className="text-zinc-400 max-w-2xl mt-1 text-xs md:text-sm">{playlist.description}</p>
                     <div className="mt-2">
                         <SyncStatus playlist={playlist} isAdmin={isAdmin} />
                     </div>
@@ -93,9 +97,9 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                 <div className="absolute inset-0 bg-black/20 backdrop-blur-sm z-0 pointer-events-none" />
 
                 {/* Content Layer */}
-                <div className="relative z-10 p-8">
+                <div className="relative z-10 p-4 md:p-8">
                     {/* Table Header */}
-                    <div className="grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-300 uppercase tracking-wider mb-4 sticky top-16 bg-black/30 backdrop-blur-sm z-20">
+                    <div className="hidden md:grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-300 uppercase tracking-wider mb-4 sticky top-16 bg-black/30 backdrop-blur-sm z-20">
                         <div className="text-right">#</div>
                         <div>Title</div>
                         <div>Album</div>
@@ -129,7 +133,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     <div className="mt-12" data-tour="suggested-section">
                         <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
                         
-                        {inactiveTracks.length > 0 && (
+                        {inactiveTracks.length > 0 ? (
                             <>
                                 <SuggestionsFilter
                                     filterText={filterText}
@@ -168,6 +172,10 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                     />
                                 </div>
                             </>
+                        ) : (
+                            <div className="text-center py-12 text-zinc-500 px-4">
+                                Nothing here!
+                            </div>
                         )}
                     </div>
                 </div>

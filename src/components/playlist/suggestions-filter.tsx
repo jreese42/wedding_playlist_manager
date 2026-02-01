@@ -20,10 +20,10 @@ export function SuggestionsFilter({
   totalRemoved,
 }: SuggestionsFilterProps) {
   return (
-    <div className="px-4 mb-6">
-      <div className="flex gap-3 items-center max-w-xl">
+    <div className="px-3 md:px-4 mb-4 md:mb-6">
+      <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 items-stretch sm:items-center max-w-xl">
         {/* Filter Text Input - Match SpotifySearch Style */}
-        <div className="relative flex-1">
+        <div className="relative flex-1 min-w-0">
           <Filter className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
           <input
             type="text"
@@ -43,7 +43,7 @@ export function SuggestionsFilter({
         </div>
 
         {/* Show Removed Checkbox - Glassmorphism Style */}
-        <label className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap">
+        <label className="flex items-center gap-1.5 cursor-pointer whitespace-nowrap flex-shrink-0">
           <div className="relative w-4 h-4">
             <input
               type="checkbox"

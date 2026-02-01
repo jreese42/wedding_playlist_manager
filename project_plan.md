@@ -104,7 +104,7 @@ Phase 6: Optional Future Features
 
 [ ] **AI Assistant**: A button on each playlist opens a chat window with a Gemini-powered AI assistant. The assistant is pre-prompted to suggest 5-10 new songs based on the playlist's vibe and user requests. Accepted suggestions are added to the 'suggestions' list, flagged with a ✨ emoji to indicate they are AI-generated. here is a button on the playlist which opens a text window to chat with an AI assistant. This is connected to Google Gemini and is conviged for the environment with an API key. There is a default prompt set up which tells the assistant it should help suggest 5-10 new songs based on the users request. The user can make a request, and the agent will suggest songs, search for them on spotify, and insert them into the suggested songs. It should flag these songs as AI suggesstions with a small sparkle emoji, which is distinct from the normal 'Suggestion' indicator. The tracks suggested by the AI Assistant should be stored in the database as 'suggested', but with a new field tracking who suggested the track by user. The AI Assistant should have a special value there, which is used to know when the AI suggested the song by user. Display this as 'AI Assistant' in the fields showing who added the song, and when this is present also change the 'Suggested' text on the page to show 'AI Suggestion' with a sparkle emoji and rainbow text.
 
-[ ] Suggested and Removed Filtering: Allow the user to filter down the suggestions and removed list, so they can find things when it is too long. Removed songs should be a checkbox to 'Show Removed'. By default, show removed is unchecked so removed songs are not visible, but checking it makes them visible. There is a small 'Filter' text box which the user can type into to quickly filter down the entries by text, searching by song and artist
+[x] Suggested and Removed Filtering: Allow the user to filter down the suggestions and removed list, so they can find things when it is too long. Removed songs should be a checkbox to 'Show Removed'. By default, show removed is unchecked so removed songs are not visible, but checking it makes them visible. There is a small 'Filter' text box which the user can type into to quickly filter down the entries by text, searching by song and artist
 
 [x] **Page Tour Onboarding**: Add an onboarding feature the first time a user logs in that shows a page tour. Explain to the user how to see playlists, reorder add and remove songs, review recommendations, use the AI assistant, and rate songs. Include a button to trigger the tour again.
 
@@ -114,7 +114,7 @@ Phase 6: Optional Future Features
 
 [x] Improve Homescreen: The current home screen is not very useful or beautiful. Improve it to be more elegant and useful.
 
-[ ] Improve Mobile: the webapp should function well on mobile devices, scaling and sliding components to fit.
+[x] Improve Mobile: the webapp should function well on mobile devices, scaling and sliding components to fit.
 
 Phase 7: Project Reusability Readiness
 [ ] Support Login with Spotify

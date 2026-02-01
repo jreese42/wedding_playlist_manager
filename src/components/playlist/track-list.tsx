@@ -6,7 +6,9 @@ import { TrackRow } from './track-row'
 import { Database } from '@/lib/database.types'
 import { moveTrack } from '@/app/playlist/actions'
 
-type Track = Database['public']['Tables']['tracks']['Row']
+type Track = Database['public']['Tables']['tracks']['Row'] & {
+    profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_color'> | null
+}
 
 interface TrackListProps {
     initialTracks: Track[]
