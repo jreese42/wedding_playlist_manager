@@ -8,6 +8,7 @@ import { TrackRow } from '@/components/playlist/track-row'
 import { HistoryPanel } from '@/components/playlist/history-panel'
 import { SpotifySearch } from '@/components/playlist/spotify-search'
 import { SyncStatus } from '@/components/playlist/sync-status'
+import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row']
@@ -20,9 +21,27 @@ interface PlaylistViewProps {
 
 export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const [selectedTrack, setSelectedTrack] = useState<Track | null>(null)
+    const [filterText, setFilterText] = useState('')
+    const [showRemoved, setShowRemoved] = useState(false)
     
     const activeTracks = tracks.filter(t => t.status === 'active')
     const inactiveTracks = tracks.filter(t => t.status !== 'active')
+    
+    // Filter logic for suggestions
+    const suggestedTracks = inactiveTracks.filter(t => 
+        t.status === 'suggested' || (showRemoved && t.status === 'rejected')
+    )
+    
+    const filteredSuggestions = suggestedTracks.filter(t => {
+        if (!filterText) return true
+        const searchLower = filterText.toLowerCase()
+        return (
+            t.title.toLowerCase().includes(searchLower) ||
+            t.artist.toLowerCase().includes(searchLower)
+        )
+    })
+    
+    const removedCount = inactiveTracks.filter(t => t.status === 'rejected').length
     
     const totalDurationMs = activeTracks.reduce((acc, t) => acc + (t.duration_ms || 0), 0)
     const hours = Math.floor(totalDurationMs / 3600000)
@@ -110,28 +129,45 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     <div className="mt-12" data-tour="suggested-section">
                         <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
                         
-                        <div className="px-4 mb-4">
-                            <SpotifySearch 
-                                playlistId={playlist.id} 
-                                status="suggested" 
-                                placeholder="Suggest a song..."
-                            />
-                        </div>
-
                         {inactiveTracks.length > 0 && (
-                            <div className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
-                                {inactiveTracks.map((track, i) => (
-                                    <TrackRow 
-                                        key={track.id} 
-                                        track={track} 
-                                        index={i} 
-                                        isMainList={false}
-                                        playlistSpotifyId={playlist.spotify_id}
-                                        onClick={() => setSelectedTrack(track)}
-                                        isAdmin={isAdmin}
+                            <>
+                                <SuggestionsFilter
+                                    filterText={filterText}
+                                    showRemoved={showRemoved}
+                                    onFilterTextChange={setFilterText}
+                                    onShowRemovedChange={setShowRemoved}
+                                    totalSuggestions={inactiveTracks.filter(t => t.status === 'suggested').length}
+                                    totalRemoved={removedCount}
+                                />
+                                
+                                {filteredSuggestions.length > 0 ? (
+                                    <div className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
+                                        {filteredSuggestions.map((track, i) => (
+                                            <TrackRow 
+                                                key={track.id} 
+                                                track={track} 
+                                                index={i} 
+                                                isMainList={false}
+                                                playlistSpotifyId={playlist.spotify_id}
+                                                onClick={() => setSelectedTrack(track)}
+                                                isAdmin={isAdmin}
+                                            />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="text-center py-6 text-zinc-500 px-4">
+                                        {filterText ? 'No suggestions match your search.' : 'No suggestions yet.'}
+                                    </div>
+                                )}
+
+                                <div className="px-4 mt-4">
+                                    <SpotifySearch 
+                                        playlistId={playlist.id} 
+                                        status="suggested" 
+                                        placeholder="Suggest a song..."
                                     />
-                                ))}
-                            </div>
+                                </div>
+                            </>
                         )}
                     </div>
                 </div>
