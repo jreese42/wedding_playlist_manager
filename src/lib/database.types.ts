@@ -18,6 +18,7 @@ export type Database = {
           vibe: string | null
           spotify_id: string | null
           display_order: number | null
+          sync_timestamp: string | null
           created_at: string
         }
         Insert: {
@@ -28,6 +29,7 @@ export type Database = {
           vibe?: string | null
           spotify_id?: string | null
           display_order?: number | null
+          sync_timestamp?: string | null
           created_at?: string
         }
         Update: {
@@ -38,6 +40,7 @@ export type Database = {
           vibe?: string | null
           spotify_id?: string | null
           display_order?: number | null
+          sync_timestamp?: string | null
           created_at?: string
         }
         Relationships: []

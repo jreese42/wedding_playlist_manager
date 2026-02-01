@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpotifyClient } from '@/lib/spotify'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
+import { addTrackToSpotify, syncWebappToSpotify } from '@/lib/spotify-sync'
 
 export async function moveTrack(playlistId: string, trackId: string, newPosition: number, oldPosition: number) {
     const supabase = await createClient()
@@ -23,6 +24,22 @@ export async function moveTrack(playlistId: string, trackId: string, newPosition
     if (error) {
         console.error('Reorder failed:', error)
         throw new Error(error.message)
+    }
+
+    // Sync reordered tracks to Spotify
+    try {
+        const { data: playlist } = await supabase
+            .from('playlists')
+            .select('spotify_id')
+            .eq('id', playlistId)
+            .single()
+
+        if (playlist?.spotify_id) {
+            await syncWebappToSpotify(playlistId, playlist.spotify_id)
+        }
+    } catch (err) {
+        console.error('Failed to sync reorder to Spotify:', err)
+        // Don't throw - the track was reordered in webapp successfully
     }
 
     revalidatePath('/playlist/[slug]', 'layout')
@@ -58,6 +75,13 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) throw new Error('Unauthorized')
 
+    // Get the track and its current status
+    const { data: track } = await supabase
+        .from('tracks')
+        .select('playlist_id, spotify_uri, status')
+        .eq('id', trackId)
+        .single()
+
     // 1. Update the track
     const { error } = await supabase.from('tracks')
         .update({ status })
@@ -72,6 +96,24 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
         action: 'status_change',
         details: { status }
     })
+
+    // 3. Sync if status changed to/from active
+    if (track?.playlist_id && (track.status === 'active' || status === 'active')) {
+        try {
+            const { data: playlist } = await supabase
+                .from('playlists')
+                .select('spotify_id')
+                .eq('id', track.playlist_id)
+                .single()
+
+            if (playlist?.spotify_id) {
+                await syncWebappToSpotify(track.playlist_id, playlist.spotify_id)
+            }
+        } catch (err) {
+            console.error('Failed to sync status change to Spotify:', err)
+            // Don't throw - the status was updated in webapp successfully
+        }
+    }
 
     revalidatePath('/playlist/[slug]', 'layout')
 }
@@ -210,6 +252,24 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         details: { title: track.name, status }
     })
 
+    // If adding to active list, sync with Spotify
+    if (status === 'active') {
+        try {
+            const { data: playlist } = await supabase
+                .from('playlists')
+                .select('spotify_id')
+                .eq('id', playlistId)
+                .single()
+
+            if (playlist?.spotify_id && track.uri) {
+                await addTrackToSpotify(playlist.spotify_id, track.uri)
+            }
+        } catch (err) {
+            console.error('Failed to sync track to Spotify:', err)
+            // Don't throw - the track was added to webapp successfully
+        }
+    }
+
     revalidatePath('/playlist/[slug]', 'layout')
 }
 
@@ -218,11 +278,37 @@ export async function deleteTrack(trackId: string) {
     if (!isAdmin) throw new Error('Unauthorized')
 
     const supabase = await createClient()
+    
+    // Get track info before deletion
+    const { data: track } = await supabase
+        .from('tracks')
+        .select('playlist_id, spotify_uri, status')
+        .eq('id', trackId)
+        .single()
+
     const { error } = await supabase.from('tracks').delete().eq('id', trackId)
 
     if (error) {
         console.error('Failed to delete track:', error)
         throw new Error(error.message)
+    }
+
+    // If track was active, sync removal with Spotify
+    if (track?.status === 'active' && track?.spotify_uri && track?.playlist_id) {
+        try {
+            const { data: playlist } = await supabase
+                .from('playlists')
+                .select('spotify_id')
+                .eq('id', track.playlist_id)
+                .single()
+
+            if (playlist?.spotify_id) {
+                await syncWebappToSpotify(track.playlist_id, playlist.spotify_id)
+            }
+        } catch (err) {
+            console.error('Failed to sync deletion to Spotify:', err)
+            // Don't throw - the track was deleted from webapp successfully
+        }
     }
 
     revalidatePath('/playlist/[slug]', 'layout')

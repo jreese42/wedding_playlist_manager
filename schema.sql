@@ -45,6 +45,7 @@ create table playlists (
   vibe text,
   spotify_id text,
   display_order integer,
+  sync_timestamp timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

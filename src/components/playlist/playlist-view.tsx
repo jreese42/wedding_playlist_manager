@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import { Database } from '@/lib/database.types'
-import { Clock } from 'lucide-react'
+import { Clock, Music, Play } from 'lucide-react'
 import { TrackList } from '@/components/playlist/track-list'
 import { TrackRow } from '@/components/playlist/track-row'
 import { HistoryPanel } from '@/components/playlist/history-panel'
 import { SpotifySearch } from '@/components/playlist/spotify-search'
+import { SyncStatus } from '@/components/playlist/sync-status'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row']
@@ -39,15 +40,31 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                 <div className="h-52 w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-6xl font-bold text-white/20 select-none">
                     {playlist.title.charAt(0)}
                 </div>
-                <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-3 flex-1">
                     <span className="text-xs font-bold uppercase tracking-wider text-white">Playlist</span>
                     <h1 className="text-7xl font-black text-white tracking-tight">{playlist.title}</h1>
                     <div className="flex items-center gap-2 text-sm text-zinc-300 font-medium">
                         <span className="text-white">{playlist.vibe}</span>
                         <span>•</span>
                         <span>{tracks.length} songs, {hours} hr {minutes} min</span>
+                        {playlist.spotify_id && (
+                            <a
+                                href={`https://open.spotify.com/playlist/${playlist.spotify_id}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2 py-1 text-xs text-zinc-400 hover:text-zinc-200 hover:bg-zinc-700/30 rounded transition-colors"
+                                title="View on Spotify"
+                            >
+                                <span>•</span>
+                                <img src="/icons8-spotify.svg" alt="Spotify" className="w-3.5 h-3.5" />
+                                <span>View in Spotify</span>
+                            </a>
+                        )}
                     </div>
-                     <p className="text-zinc-400 max-w-2xl mt-1 text-sm">{playlist.description}</p>
+                    <p className="text-zinc-400 max-w-2xl mt-1 text-sm">{playlist.description}</p>
+                    <div className="mt-2">
+                        <SyncStatus playlist={playlist} isAdmin={isAdmin} />
+                    </div>
                 </div>
             </div>
 
