@@ -9,24 +9,37 @@ type Playlist = Database['public']['Tables']['playlists']['Row']
 async function getPlaylist(slug: string) {
     const supabase = await createClient()
 
-    // 1. Find playlist by partial title match (simple way to map "morning" -> "Morning Background Music")
-    // In a real app we might store the slug in the DB, but this works for now given our 6 specific playlists.
-    let searchTerm = ''
-    switch(slug) {
-        case 'morning': searchTerm = 'Morning'; break;
-        case 'ceremony': searchTerm = 'Ceremony'; break;
-        case 'brunch': searchTerm = 'Brunch'; break;
-        case 'boat': searchTerm = 'Boat'; break;
-        case 'reception': searchTerm = 'Reception'; break;
-        case 'moments': searchTerm = 'Specific'; break;
-        default: return null
+    let playlist = null
+
+    // First, try to find by ID (for dynamic playlists)
+    if (slug.match(/^[0-9a-f-]{36}$/)) {
+        const { data } = await supabase
+            .from('playlists')
+            .select('*')
+            .eq('id', slug)
+            .single()
+        playlist = data
     }
 
-    const { data: playlist } = await supabase
-        .from('playlists')
-        .select('*')
-        .ilike('title', `%${searchTerm}%`)
-        .single()
+    // If not found by ID, try to find by matching the slug to playlist titles
+    // This handles both legacy hardcoded playlists and new dynamic playlists
+    if (!playlist) {
+        // Get all playlists and find one that matches the slug
+        const { data: playlists } = await supabase
+            .from('playlists')
+            .select('*')
+            .order('display_order', { ascending: true })
+        
+        if (playlists && playlists.length > 0) {
+            // Helper function to slugify titles the same way the homepage does
+            const slugify = (text: string) => {
+                return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+            }
+            
+            // Try to find a playlist whose slug matches
+            playlist = playlists.find(p => slugify(p.title.split(' ')[0]) === slug) || null
+        }
+    }
     
     if (!playlist) return null
 

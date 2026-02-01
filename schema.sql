@@ -40,6 +40,7 @@ create trigger on_auth_user_created
 create table playlists (
   id uuid default gen_random_uuid() primary key,
   title text not null,
+  spotify_title text,
   description text,
   vibe text,
   spotify_id text,
@@ -125,3 +126,25 @@ begin
   insert into audit_log (track_id, user_id, action, 'move', jsonb_build_object('from', p_old_position, 'to', p_new_position));
 end;
 $$ language plpgsql;
+
+-- App Settings Table
+create table app_settings (
+  id uuid default gen_random_uuid() primary key,
+  key text not null unique,
+  value text,
+  description text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS for App Settings
+alter table app_settings enable row level security;
+create policy "App settings are viewable by everyone" on app_settings for select using (true);
+create policy "Only authenticated users can update app settings" on app_settings for all using (auth.role() = 'authenticated');
+
+-- Insert default app settings
+insert into app_settings (key, value, description) values
+  ('page_title', 'Dana & Justin Wedding Playlists', 'Title shown in browser tab'),
+  ('homepage_text', 'Welcome to the Wedding Playlist Manager', 'Main heading text on homepage'),
+  ('homepage_subtitle', 'Collaborate on the perfect playlist for the big day', 'Subtitle text on homepage')
+on conflict (key) do nothing;

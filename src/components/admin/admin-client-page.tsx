@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useActionState, useState, useEffect } from 'react'
 import { seedPlaylists, syncTracksFromSpotify, type ActionState } from '@/app/admin/actions'
-import { Users } from 'lucide-react'
+import { Users, Settings } from 'lucide-react'
 
 const initialState: ActionState = {
     results: [],
@@ -32,6 +32,10 @@ export function AdminClientPage() {
                 <Link href="/admin/users" className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors">
                     <Users size={18} />
                     Manage Users
+                </Link>
+                <Link href="/admin/settings" className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors">
+                    <Settings size={18} />
+                    App Settings
                 </Link>
             </div>
 

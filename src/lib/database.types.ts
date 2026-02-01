@@ -13,6 +13,7 @@ export type Database = {
         Row: {
           id: string
           title: string
+          spotify_title: string | null
           description: string | null
           vibe: string | null
           spotify_id: string | null
@@ -22,6 +23,7 @@ export type Database = {
         Insert: {
           id?: string
           title: string
+          spotify_title?: string | null
           description?: string | null
           vibe?: string | null
           spotify_id?: string | null
@@ -31,6 +33,7 @@ export type Database = {
         Update: {
           id?: string
           title?: string
+          spotify_title?: string | null
           description?: string | null
           vibe?: string | null
           spotify_id?: string | null
@@ -203,4 +206,14 @@ export type Database = {
       [_ in never]: never
     }
   }
+}
+
+// App Settings type
+export interface AppSetting {
+  id: string
+  key: string
+  value: string | null
+  description: string | null
+  created_at: string
+  updated_at: string
 }

@@ -1,15 +1,23 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { PlaylistCard } from '@/components/home/playlist-card'
+import { revalidatePath } from 'next/cache'
 
 // Simple slugify function
 const slugify = (text: string) => {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
+export const revalidate = 0 // Disable caching for homepage
+
 export default async function Home() {
   const supabase = await createClient()
-  const { data: playlists } = await supabase.from('playlists').select('*').order('display_order')
+  
+  // Fetch playlists - use explicit columns to avoid schema cache issues
+  const { data: playlists } = await supabase
+    .from('playlists')
+    .select('id, title, vibe, spotify_id, spotify_title, display_order')
+    .order('display_order', { ascending: true })
 
   const gradients = [
     'from-indigo-500 to-purple-500',
@@ -33,18 +41,24 @@ export default async function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {playlists?.map((playlist, index) => {
-            const slug = slugify(playlist.title.split(' ')[0]); // Simple slug from first word
-            return (
-              <PlaylistCard
-                key={playlist.id}
-                slug={slug}
-                title={playlist.title}
-                vibe={playlist.vibe}
-                gradientClasses={gradients[index % gradients.length]}
-              />
-            )
-          })}
+          {playlists && playlists.length > 0 ? (
+            playlists.map((playlist, index) => {
+              const slug = slugify(playlist.title.split(' ')[0]); // Simple slug from first word
+              return (
+                <PlaylistCard
+                  key={playlist.id}
+                  slug={slug}
+                  title={playlist.title}
+                  vibe={playlist.vibe}
+                  gradientClasses={gradients[index % gradients.length]}
+                />
+              )
+            })
+          ) : (
+            <div className="col-span-full text-center py-12">
+              <p className="text-zinc-400">No playlists yet. Check back soon!</p>
+            </div>
+          )}
         </div>
       </div>
     </main>

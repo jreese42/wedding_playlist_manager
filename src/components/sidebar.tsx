@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Home, Music, Settings, ListMusic, LogOut, LogIn } from "lucide-react";
+import { Home, Music, Settings, LogOut, LogIn, Edit2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/server";
 import { logout } from "@/app/login/actions";
@@ -11,6 +11,12 @@ export async function Sidebar({ className }: SidebarProps) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const isAdmin = await checkIfAdmin();
+
+  // Fetch playlists from database
+  const { data: playlists = [] } = await supabase
+    .from('playlists')
+    .select('id, title')
+    .order('display_order', { ascending: true });
 
   return (
     <div className={cn("pb-12 min-h-screen w-64 border-r bg-zinc-950 text-white hidden md:block", className)}>
@@ -28,47 +34,32 @@ export async function Sidebar({ className }: SidebarProps) {
              </Link>
           </div>
         </div>
+
+        {/* Dynamic Playlists Section */}
         <div className="px-3 py-2">
-          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
-            Playlists
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="px-4 text-lg font-semibold tracking-tight">
+              Playlists
+            </h2>
+            <Link href="/playlists">
+              <button className="p-1.5 hover:bg-zinc-800 rounded-md transition-colors text-zinc-400 hover:text-white" title="Manage playlists">
+                <Edit2 className="h-4 w-4" />
+              </button>
+            </Link>
+          </div>
           <div className="space-y-1">
-            <Link href="/playlist/morning">
-                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
+            {(!playlists || playlists.length === 0) ? (
+              <p className="px-4 py-2 text-xs text-zinc-500">No playlists yet. Click the edit button to add one.</p>
+            ) : (
+              playlists.map((playlist) => (
+                <Link key={playlist.id} href={`/playlist/${playlist.id}`}>
+                  <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
                     <Music className="h-4 w-4" />
-                    Morning Prep
-                </button>
-            </Link>
-            <Link href="/playlist/brunch">
-                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <Music className="h-4 w-4" />
-                    Brunch
-                </button>
-            </Link>
-             <Link href="/playlist/ceremony">
-                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <Music className="h-4 w-4" />
-                    Ceremony
-                </button>
-            </Link>
-            <Link href="/playlist/boat">
-                 <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <Music className="h-4 w-4" />
-                    Boat Party
-                </button>
-            </Link>
-            <Link href="/playlist/reception">
-                 <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <Music className="h-4 w-4" />
-                    Reception
-                </button>
-            </Link>
-             <Link href="/playlist/moments">
-                 <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
-                    <Music className="h-4 w-4" />
-                    Specific Moments
-                </button>
-            </Link>
+                    {playlist.title}
+                  </button>
+                </Link>
+              ))
+            )}
           </div>
         </div>
         
