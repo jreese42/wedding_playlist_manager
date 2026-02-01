@@ -19,7 +19,7 @@ export async function Sidebar({ className }: SidebarProps) {
     .order('display_order', { ascending: true });
 
   return (
-    <div className={cn("pb-12 min-h-screen w-64 border-r bg-zinc-950 text-white hidden md:block", className)}>
+    <div className={cn("pb-12 min-h-screen w-64 border-r bg-zinc-950 text-white hidden md:block", className)} data-tour="navigation">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">

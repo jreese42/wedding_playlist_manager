@@ -2,7 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { ProfileSettingsForm } from '@/components/profile/profile-settings-form'
 import { ChangePasswordForm } from '@/components/profile/change-password-form'
-import { ArrowLeft, Lock } from 'lucide-react'
+import { RestartTourButton } from '@/components/tour/restart-tour-button'
+import { ArrowLeft, Lock, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
 
 export default async function SettingsPage() {
@@ -50,6 +51,18 @@ export default async function SettingsPage() {
               initialDisplayName={profile.display_name || ''}
               initialAvatarColor={profile.avatar_color || '#6366f1'}
             />
+          </div>
+
+          {/* Welcome Tour Card */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-6 backdrop-blur-md">
+            <div className="flex items-center gap-2 mb-4">
+              <HelpCircle size={20} className="text-indigo-400" />
+              <h2 className="text-lg font-semibold text-white">Help</h2>
+            </div>
+            <p className="text-white/60 text-sm mb-4">
+              Get a guided tour of the playlist manager features.
+            </p>
+            <RestartTourButton />
           </div>
 
           {/* Change Password Card */}

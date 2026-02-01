@@ -88,6 +88,7 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
         onClick={onClick}
         className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
         style={draggableProps?.style}
+        data-tour={isMainList ? "track-row" : undefined}
     >
       <div className="flex justify-center items-center w-4 text-right tabular-nums">
         <span className="group-hover:hidden">{isMainList ? index + 1 : '-'}</span>

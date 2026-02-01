@@ -6,6 +6,8 @@ create table profiles (
   email text,
   display_name text,
   avatar_color text,
+  tour_completed boolean default false,
+  tour_completed_at timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

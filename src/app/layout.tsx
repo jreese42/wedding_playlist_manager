@@ -3,6 +3,9 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Sidebar } from "@/components/sidebar";
+import { TourProvider } from "@/lib/tour-context";
+import { TourOverlay } from "@/components/tour/tour-overlay";
+import { TourTrigger } from "@/components/tour/tour-trigger";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
@@ -22,10 +25,14 @@ export default function RootLayout({
           "min-h-screen bg-background font-sans antialiased flex",
           inter.variable
         )}>
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto">
-             {children}
-        </main>
+        <TourProvider>
+          <Sidebar />
+          <main className="flex-1 overflow-y-auto">
+            <TourTrigger />
+            <TourOverlay />
+            {children}
+          </main>
+        </TourProvider>
       </body>
     </html>
   );

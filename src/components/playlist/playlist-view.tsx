@@ -36,7 +36,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
             />
 
             {/* Header */}
-            <div className="flex items-end gap-6 p-8 pb-6">
+            <div className="flex items-end gap-6 p-8 pb-6" data-tour="playlist-header">
                 <div className="h-52 w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-6xl font-bold text-white/20 select-none">
                     {playlist.title.charAt(0)}
                 </div>
@@ -92,7 +92,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         onSelectTrack={(trackId) => setSelectedTrack(tracks.find(t => t.id === trackId) || null)}
                     />
 
-                    <div className="mt-4">
+                    <div className="mt-4" data-tour="add-songs-bar">
                         <SpotifySearch 
                             playlistId={playlist.id} 
                             status="active" 
@@ -107,7 +107,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     )}
 
                     {/* Suggestions & Rejected Section */}
-                    <div className="mt-12">
+                    <div className="mt-12" data-tour="suggested-section">
                         <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
                         
                         <div className="px-4 mb-4">
