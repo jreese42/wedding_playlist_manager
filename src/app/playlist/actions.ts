@@ -104,3 +104,29 @@ export async function getTrackHistory(trackId: string) {
     return hydratedLogs
 }
 
+export async function addComment(trackId: string, comment: string) {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    if (!comment || comment.trim().length === 0) {
+        throw new Error('Comment cannot be empty')
+    }
+
+    const { error } = await supabase.from('audit_log').insert({
+        track_id: trackId,
+        user_id: user.id,
+        action: 'comment',
+        details: { comment: comment.trim() }
+    })
+
+    if (error) {
+        console.error('Failed to add comment:', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/playlist/[slug]', 'layout')
+}
+
+

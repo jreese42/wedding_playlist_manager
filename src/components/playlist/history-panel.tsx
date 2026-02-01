@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { X, History, Clock, User, MousePointerClick } from 'lucide-react'
-import { getTrackHistory } from '@/app/playlist/actions'
+import { useEffect, useState, useTransition } from 'react'
+import { X, History, Clock, User, MousePointerClick, MessageSquare } from 'lucide-react'
+import { getTrackHistory, addComment } from '@/app/playlist/actions'
 
 interface HistoryPanelProps {
     trackId: string | null
@@ -23,6 +23,17 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
     const [isOpen, setIsOpen] = useState(false)
     const [currentTrackId, setCurrentTrackId] = useState<string | null>(null)
 
+    const fetchHistory = () => {
+        if (!trackId) return;
+        setLoading(true)
+        getTrackHistory(trackId)
+            .then((data) => {
+                setHistory(data as HistoryItem[])
+            })
+            .catch((err) => console.error(err))
+            .finally(() => setLoading(false))
+    }
+
     useEffect(() => {
         if (trackId) {
             setCurrentTrackId(trackId)
@@ -32,13 +43,7 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                 setIsOpen(true)
             }, 10) // A tiny delay is all that's needed
 
-            setLoading(true)
-            getTrackHistory(trackId)
-                .then((data) => {
-                    setHistory(data as HistoryItem[])
-                })
-                .catch((err) => console.error(err))
-                .finally(() => setLoading(false))
+            fetchHistory()
         } else {
             setIsOpen(false)
         }
@@ -80,8 +85,8 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {loading ? (
-                        <div className="text-center text-zinc-500 py-10">
-                            Loading history...
+                        <div className="flex justify-center items-center text-zinc-500 py-10">
+                            <Spinner />
                         </div>
                     ) : history.length === 0 ? (
                         <div className="text-center text-zinc-500 py-10">
@@ -114,13 +119,59 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                         ))
                     )}
                 </div>
+
+                <CommentForm trackId={currentTrackId} onCommentAdded={fetchHistory} />
             </div>
         </>
     )
 }
 
+function CommentForm({ trackId, onCommentAdded }: { trackId: string, onCommentAdded: () => void }) {
+    const [comment, setComment] = useState('')
+    const [isPending, startTransition] = useTransition()
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!comment.trim() || !trackId) return
+
+        startTransition(async () => {
+            try {
+                await addComment(trackId, comment)
+                setComment('')
+                onCommentAdded()
+            } catch (error) {
+                console.error('Failed to add comment', error)
+                alert('Could not post comment.')
+            }
+        })
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="p-4 border-t border-white/10">
+            <div className="relative">
+                <input
+                    type="text"
+                    value={comment}
+                    onChange={(e) => setComment(e.target.value)}
+                    placeholder="Add a comment..."
+                    className="w-full bg-zinc-800 rounded-full py-2 pl-4 pr-12 text-sm text-zinc-300 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    disabled={isPending}
+                />
+                <button
+                    type="submit"
+                    className="absolute right-1 top-1/2 -translate-y-1/2 bg-indigo-600 hover:bg-indigo-500 rounded-full h-7 w-7 flex items-center justify-center text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isPending || !comment.trim()}
+                >
+                    {isPending ? <Spinner /> : <SendIcon className="w-4 h-4" />}
+                </button>
+            </div>
+        </form>
+    )
+}
+
 function ActionIcon({ action }: { action: string }) {
     switch (action) {
+        case 'comment': return <MessageSquare className="w-4 h-4 text-gray-400" />
         case 'move': return <MousePointerClick className="w-4 h-4 text-blue-400" />
         case 'rate': return <StarIcon className="w-4 h-4 text-yellow-400" />
         case 'status_change': return <RefreshCwIcon className="w-4 h-4 text-green-400" />
@@ -163,5 +214,31 @@ function FormatDetails({ action, details }: { action: string, details: any }) {
         )
     }
 
+    if (action === 'comment') {
+        return (
+            <div className="bg-zinc-800 p-2 rounded-md text-zinc-300">
+                {details.comment}
+            </div>
+        )
+    }
+
     return <pre className="whitespace-pre-wrap">{JSON.stringify(details, null, 2)}</pre>
+}
+
+function Spinner() {
+    return (
+        <svg className="animate-spin h-5 w-5 text-zinc-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+    )
+}
+
+function SendIcon({ className }: { className?: string }) {
+    return (
+        <svg xmlns="http://www.w.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+    )
 }

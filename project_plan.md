@@ -64,7 +64,7 @@ Phase 3: The Spotify UI (Desktop & Mobile)
 
 [x] Drag handle, Artwork, Title/Artist, Star Rating, Metadata.
 
-[ ] **History Panel**: Tapping a song slides open a right-side panel showing its audit log history.
+[x] **History Panel**: Tapping a song slides open a right-side panel showing its audit log history.
 
 [ ] **Comments**: Track a list of comments by users on the tracks. Show these comments in the History panel. Allow a user to make a comment from in the history panel. The comments should be in line with other history, so we can see a scrolling log like "Dana commented I dont like this song" "Dana removed this song"
 
