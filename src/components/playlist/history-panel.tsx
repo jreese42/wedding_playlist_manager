@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { X, History, Clock, User, MousePointerClick, MessageSquare, Pin } from 'lucide-react'
+import { X, History, Clock, User, MousePointerClick, MessageSquare, Pin, Plus } from 'lucide-react'
 import { getTrackHistory, addComment, pinComment } from '@/app/playlist/actions'
 import { Database } from '@/lib/database.types'
 
@@ -17,7 +17,10 @@ type HistoryItem = {
     created_at: string
     action: string
     details: any
-    user_email: string
+    profiles: {
+        display_name: string | null
+        avatar_color: string | null
+    } | null
 }
 
 export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
@@ -119,10 +122,7 @@ export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-2 text-xs text-zinc-500">
-                                            <div className="flex items-center gap-1">
-                                                <User className="w-3 h-3" />
-                                                <span>{item.user_email}</span>
-                                            </div>
+                                            <UserAvatar profile={item.profiles} />
                                             <span>•</span>
                                             <div className="flex items-center gap-1">
                                                 <Clock className="w-3 h-3" />
@@ -195,6 +195,7 @@ function CommentForm({ trackId, onCommentAdded }: { trackId: string, onCommentAd
 
 function ActionIcon({ action }: { action: string }) {
     switch (action) {
+        case 'add': return <Plus className="w-4 h-4 text-green-400" />
         case 'comment': return <MessageSquare className="w-4 h-4 text-gray-400" />
         case 'move': return <MousePointerClick className="w-4 h-4 text-blue-400" />
         case 'rate': return <StarIcon className="w-4 h-4 text-yellow-400" />
@@ -212,7 +213,15 @@ function RefreshCwIcon({ className }: { className?: string }) {
 }
 
 function FormatDetails({ action, details }: { action: string, details: any }) {
-    if (!details) return null
+    if (!details && action !== 'add') return null
+
+    if (action === 'add') {
+        return (
+            <span>
+                Song added to <span className="text-green-400 font-bold">{details?.status || 'playlist'}</span> list
+            </span>
+        )
+    }
 
     if (action === 'move') {
         return (
@@ -264,5 +273,28 @@ function SendIcon({ className }: { className?: string }) {
             <line x1="22" y1="2" x2="11" y2="13"></line>
             <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
         </svg>
+    )
+}
+
+function UserAvatar({ profile }: { profile: { display_name: string | null, avatar_color: string | null } | null }) {
+    if (!profile || !profile.display_name) {
+        return (
+            <div className="flex items-center gap-1">
+                <div className="w-4 h-4 rounded-full bg-zinc-700" />
+                <span>Unknown User</span>
+            </div>
+        )
+    }
+
+    return (
+        <div className="flex items-center gap-1.5">
+            <div 
+                className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ backgroundColor: profile.avatar_color || '#6366f1' }}
+            >
+                {profile.display_name.charAt(0).toUpperCase()}
+            </div>
+            <span>{profile.display_name}</span>
+        </div>
     )
 }

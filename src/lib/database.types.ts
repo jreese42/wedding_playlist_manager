@@ -39,6 +39,37 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          id: string
+          email: string | null
+          display_name: string | null
+          avatar_color: string | null
+          created_at: string
+        }
+        Insert: {
+          id: string
+          email?: string | null
+          display_name?: string | null
+          avatar_color?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          email?: string | null
+          display_name?: string | null
+          avatar_color?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profiles_id_fkey"
+            columns: ["id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       tracks: {
         Row: {
           id: string
@@ -100,6 +131,12 @@ export type Database = {
             columns: ["playlist_id"]
             referencedRelation: "playlists"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tracks_added_by_fkey"
+            columns: ["added_by"]
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
           }
         ]
       }
@@ -133,6 +170,12 @@ export type Database = {
             foreignKeyName: "audit_log_track_id_fkey"
             columns: ["track_id"]
             referencedRelation: "tracks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_log_user_id_fkey"
+            columns: ["user_id"]
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           }
         ]

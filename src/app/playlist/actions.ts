@@ -78,32 +78,42 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
 
 export async function getTrackHistory(trackId: string) {
     const supabase = await createClient()
-    const adminAuthClient = createAdminClient() // Needed to get user emails from auth.users
 
-    // 1. Get logs
+    // Fetch audit logs for this track
     const { data: logs, error } = await supabase
         .from('audit_log')
         .select('*')
         .eq('track_id', trackId)
         .order('created_at', { ascending: false })
 
-    if (error) throw new Error(error.message)
-    if (!logs) return []
+    if (error) {
+        console.error("Error fetching track history:", error)
+        throw new Error(error.message)
+    }
 
-    // 2. Hydrate with user emails (inefficient n+1 but fine for small scale)
-    const hydratedLogs = await Promise.all(logs.map(async (log) => {
-        let userEmail = 'Unknown'
-        if (log.user_id) {
-            const { data: { user }, error: userError } = await adminAuthClient.auth.admin.getUserById(log.user_id)
-            if (user) userEmail = user.email || 'No Email'
-        }
-        return {
-            ...log,
-            user_email: userEmail
-        }
-    }))
+    // Extract unique user IDs and fetch their profiles
+    let enrichedLogs = logs || []
+    if (enrichedLogs.length > 0) {
+        const userIds = enrichedLogs
+            .map((log: any) => log.user_id)
+            .filter((id: any) => id !== null && id !== undefined)
+            .filter((v: any, i: any, a: any) => a.indexOf(v) === i) // deduplicate
 
-    return hydratedLogs
+        if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, display_name, avatar_color')
+                .in('id', userIds)
+
+            const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
+            enrichedLogs = enrichedLogs.map((log: any) => ({
+                ...log,
+                profiles: log.user_id ? profileMap.get(log.user_id) : null
+            }))
+        }
+    }
+
+    return enrichedLogs
 }
 
 export async function addComment(trackId: string, comment: string) {
@@ -172,7 +182,7 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         position = (maxPosData?.position || 0) + 1
     }
 
-    const { error } = await supabase.from('tracks').insert({
+    const { data: insertedTrack, error } = await supabase.from('tracks').insert({
         playlist_id: playlistId,
         title: track.name,
         artist: track.artists.map((a: any) => a.name).join(', '),
@@ -185,16 +195,16 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         status: status,
         position: status === 'active' ? position : null,
         added_by: user.id
-    })
+    }).select().single()
 
     if (error) {
         console.error('Failed to add track:', error)
         throw new Error(error.message)
     }
 
-    // Log to Audit
+    // Log to Audit with track_id
     await supabase.from('audit_log').insert({
-        track_id: undefined, // We don't have the ID easily here without a second query, skipping for now or could select back
+        track_id: insertedTrack.id,
         user_id: user.id,
         action: 'add',
         details: { title: track.name, status }
@@ -216,6 +226,99 @@ export async function deleteTrack(trackId: string) {
     }
 
     revalidatePath('/playlist/[slug]', 'layout')
+}
+
+export async function updateProfile(displayName: string, avatarColor: string) {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    if (!displayName || displayName.trim().length === 0) {
+        throw new Error('Display name cannot be empty')
+    }
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            display_name: displayName.trim(),
+            avatar_color: avatarColor
+        })
+        .eq('id', user.id)
+
+    if (error) {
+        console.error('Failed to update profile:', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/', 'layout')
+}
+
+export async function adminUpdateUserProfile(userId: string, displayName: string, avatarColor: string) {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized')
+
+    const supabase = await createClient()
+
+    if (!displayName || displayName.trim().length === 0) {
+        throw new Error('Display name cannot be empty')
+    }
+
+    const { error } = await supabase
+        .from('profiles')
+        .update({
+            display_name: displayName.trim(),
+            avatar_color: avatarColor
+        })
+        .eq('id', userId)
+
+    if (error) {
+        console.error('Failed to update user profile:', error)
+        throw new Error(error.message)
+    }
+
+    revalidatePath('/admin/users', 'page')
+}
+
+export async function updatePassword(currentPassword: string, newPassword: string) {
+    const supabase = await createClient()
+    
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) throw new Error('Unauthorized')
+
+    if (!currentPassword || !newPassword) {
+        throw new Error('Both passwords are required')
+    }
+
+    if (newPassword.length < 6) {
+        throw new Error('Password must be at least 6 characters')
+    }
+
+    if (currentPassword === newPassword) {
+        throw new Error('New password must be different from current password')
+    }
+
+    // Verify current password by attempting to sign in
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword
+    })
+
+    if (signInError) {
+        throw new Error('Current password is incorrect')
+    }
+
+    // Update password
+    const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword
+    })
+
+    if (updateError) {
+        console.error('Failed to update password:', updateError)
+        throw new Error(updateError.message)
+    }
+
+    revalidatePath('/settings', 'page')
 }
 
 

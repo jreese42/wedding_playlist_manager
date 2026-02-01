@@ -30,31 +30,46 @@ async function getPlaylist(slug: string) {
     
     if (!playlist) return null
 
-    // 2. Get tracks
-    const { data: allTracks } = await supabase
+    // 2. Get tracks with user profile data
+    const { data: allTracks, error: tracksError } = await supabase
         .from('tracks')
         .select(`
-            id, 
-            playlist_id, 
-            title, 
-            artist, 
-            album, 
-            artwork_url, 
-            spotify_uri, 
-            duration_ms, 
-            status, 
-            rating, 
-            position, 
-            pinned_comment, 
-            added_by, 
-            created_at,
+            *,
             artist_spotify_uri,
-            album_spotify_uri
+            album_spotify_uri,
+            added_by
         `)
         .eq('playlist_id', playlist.id)
         .order('position', { ascending: true }) // Order by our custom position
     
-    return { playlist, tracks: allTracks || [] }
+    if (tracksError) {
+        console.error('Error fetching tracks:', tracksError)
+        return { playlist, tracks: [] }
+    }
+
+    // 3. Fetch profile data for all tracks
+    let enrichedTracks = allTracks || []
+    if (enrichedTracks.length > 0) {
+        const userIds = enrichedTracks
+            .map((t: any) => t.added_by)
+            .filter((id: any) => id !== null && id !== undefined)
+            .filter((v: any, i: any, a: any) => a.indexOf(v) === i) // deduplicate
+        
+        if (userIds.length > 0) {
+            const { data: profiles } = await supabase
+                .from('profiles')
+                .select('id, display_name, avatar_color')
+                .in('id', userIds)
+            
+            const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
+            enrichedTracks = enrichedTracks.map((track: any) => ({
+                ...track,
+                profiles: track.added_by ? profileMap.get(track.added_by) : null
+            }))
+        }
+    }
+    
+    return { playlist, tracks: enrichedTracks }
 }
 
 export default async function PlaylistPage({ params }: { params: Promise<{ slug: string }> }) {

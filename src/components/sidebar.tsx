@@ -88,6 +88,22 @@ export async function Sidebar({ className }: SidebarProps) {
         </div>
         )}
 
+        {user && (
+          <div className="px-3 py-2">
+            <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+              Account
+            </h2>
+            <div className="space-y-1">
+              <Link href="/settings">
+                <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
+                  <Settings className="h-4 w-4" />
+                  Profile
+                </button>
+              </Link>
+            </div>
+          </div>
+        )}
+
         <div className="px-3 py-2 mt-auto">
             <div className="space-y-1">
                 {user ? (

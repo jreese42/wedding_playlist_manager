@@ -5,7 +5,9 @@ import { Database } from '@/lib/database.types'
 import { Star, Trash2, Plus, RefreshCw, Pin, Trash } from 'lucide-react'
 import { updateRating, updateStatus, deleteTrack } from '@/app/playlist/actions'
 
-type Track = Database['public']['Tables']['tracks']['Row']
+type Track = Database['public']['Tables']['tracks']['Row'] & {
+    profiles: Pick<Database['public']['Tables']['profiles']['Row'], 'display_name' | 'avatar_color'> | null
+}
 
 interface TrackRowProps {
   track: Track
@@ -144,6 +146,11 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
                 </span>
             </div>
           )}
+          {track.profiles && (
+            <div className="flex items-center gap-1.5 mt-1 text-xs text-zinc-400">
+                <UserAvatar profile={track.profiles} />
+            </div>
+          )}
         </div>
       </div>
 
@@ -221,4 +228,22 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
       </div>
     </div>
   )
+}
+
+function UserAvatar({ profile }: { profile: { display_name: string | null, avatar_color: string | null } | null }) {
+    if (!profile || !profile.display_name) {
+        return null
+    }
+
+    return (
+        <div className="flex items-center gap-1.5" title={`Added by ${profile.display_name}`}>
+            <div 
+                className="w-4 h-4 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                style={{ backgroundColor: profile.avatar_color || '#6366f1' }}
+            >
+                {profile.display_name.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-zinc-400">{profile.display_name}</span>
+        </div>
+    )
 }

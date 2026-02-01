@@ -1,7 +1,9 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState, useState, useEffect } from 'react'
 import { seedPlaylists, syncTracksFromSpotify, type ActionState } from '@/app/admin/actions'
+import { Users } from 'lucide-react'
 
 const initialState: ActionState = {
     results: [],
@@ -24,6 +26,14 @@ export function AdminClientPage() {
     return (
         <div className="p-8 max-w-4xl mx-auto text-white">
             <h1 className="text-3xl font-bold mb-8">Admin Dashboard</h1>
+
+            {/* Navigation Links */}
+            <div className="mb-8 flex gap-4">
+                <Link href="/admin/users" className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg transition-colors">
+                    <Users size={18} />
+                    Manage Users
+                </Link>
+            </div>
 
             {/* Modal */}
             {isModalOpen && (

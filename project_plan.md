@@ -72,9 +72,9 @@ Phase 3: The Spotify UI (Desktop & Mobile)
 
 [ ] **Notifications Panel**: Add a notifications panel, present a review of ALL recent events across all songs to allow for quick catch up with additions, deletions, reordering, and comments.
 
-[ ] **Display Who Added or Suggested By User**: In the track view, display which user added or suggested the song originally. Note the connection with the AI Assistant feature, there is one bonus valid "user" which is that it was suggested by the AI Assistant.
+[x] **Display Who Added or Suggested By User**: In the track view, display which user added or suggested the song originally. Note the connection with the AI Assistant feature, there is one bonus valid "user" which is that it was suggested by the AI Assistant.
 
-[ ] **Real User Names**: Modify the user list to allow for adding a real name, which is used in display instead of the user login. So I can show 'Dana', 'Kyle', or 'James' in Activity History and 'Who added this song' views.
+[x] **Real User Names**: Modify the user list to allow for adding a real name, which is used in display instead of the user login. So I can show 'Dana', 'Kyle', or 'James' in Activity History and 'Who added this song' views.
 
 [x] Implement @hello-pangea/dnd for smooth reordering on mouse and touch.
 

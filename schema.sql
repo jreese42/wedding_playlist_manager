@@ -1,5 +1,38 @@
 -- Project Schema for Wedding Playlist App
 
+-- Profiles Table (Public User Data)
+create table profiles (
+  id uuid references auth.users(id) on delete cascade primary key,
+  email text,
+  display_name text,
+  avatar_color text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- RLS for Profiles
+alter table profiles enable row level security;
+create policy "Public profiles are viewable by everyone" on profiles for select using (true);
+create policy "Users can update own profile" on profiles for update using (auth.uid() = id);
+
+-- Trigger to handle new user signup
+create or replace function handle_new_user()
+returns trigger as $$
+begin
+  insert into public.profiles (id, email, display_name, avatar_color)
+  values (
+    new.id, 
+    new.email, 
+    split_part(new.email, '@', 1), -- Default name is email prefix
+    '#6366f1' -- Default Indigo color
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure handle_new_user();
+
 -- Enable RLS
 -- alter table auth.users enable row level security; -- (Commented out: requires superuser, usually already enabled)
 
