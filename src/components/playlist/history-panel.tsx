@@ -68,7 +68,7 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                 <div className="p-6 border-b border-white/10 flex items-center justify-between">
                     <div className="flex items-center gap-2 text-white font-bold text-lg">
                         <History className="w-5 h-5" />
-                        <h2>Track History</h2>
+                        <span>History</span>
                     </div>
                     <button 
                         onClick={onClose}
@@ -78,7 +78,7 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="flex-1 overflow-y-auto p-6 space-y-4">
                     {loading ? (
                         <div className="text-center text-zinc-500 py-10">
                             Loading history...
@@ -89,29 +89,25 @@ export function HistoryPanel({ trackId, onClose }: HistoryPanelProps) {
                         </div>
                     ) : (
                         history.map((item) => (
-                            <div key={item.id} className="relative pl-6 border-l border-zinc-700 pb-6 last:pb-0">
-                                <div className="absolute -left-1.5 top-0 w-3 h-3 rounded-full bg-zinc-600 ring-4 ring-[#18181b]" />
+                            <div key={item.id} className="relative pl-6 border-l border-zinc-700 pb-4 last:pb-0">
+                                <div className="absolute -left-2 top-0.5 w-4 h-4 rounded-full bg-[#18181b] flex items-center justify-center">
+                                    <ActionIcon action={item.action} />
+                                </div>
                                 
-                                <div className="flex flex-col gap-1">
-                                    <div className="flex items-center justify-between text-xs text-zinc-500 mb-1">
-                                        <span className="flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(item.created_at).toLocaleString()}
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="text-sm font-medium text-white flex items-center gap-2">
-                                        <ActionIcon action={item.action} />
-                                        <span className="capitalize">{item.action.replace('_', ' ')}</span>
-                                    </div>
-
-                                    <div className="text-xs text-zinc-400 mt-1 bg-zinc-800/50 p-2 rounded">
+                                <div className="flex flex-col gap-0.5">
+                                    <div className="text-sm text-zinc-300">
                                         <FormatDetails action={item.action} details={item.details} />
                                     </div>
-
-                                    <div className="flex items-center gap-1 mt-2 text-xs text-zinc-500">
-                                        <User className="w-3 h-3" />
-                                        <span>{item.user_email}</span>
+                                    <div className="flex items-center gap-2 text-xs text-zinc-500">
+                                        <div className="flex items-center gap-1">
+                                            <User className="w-3 h-3" />
+                                            <span>{item.user_email}</span>
+                                        </div>
+                                        <span>•</span>
+                                        <div className="flex items-center gap-1">
+                                            <Clock className="w-3 h-3" />
+                                            <span>{new Date(item.created_at).toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
