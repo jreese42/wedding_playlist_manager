@@ -58,7 +58,7 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
                         className={`w-4 h-4 ${
                             (rating || 0) >= star 
                                 ? 'fill-yellow-400 text-yellow-400' 
-                                : 'text-zinc-600 hover:text-zinc-400'
+                                : 'text-zinc-500 hover:text-zinc-400'
                         }`} 
                     />
                 </button>
@@ -83,7 +83,7 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
         {...draggableProps}
         {...dragHandleProps}
         onClick={onClick}
-        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
+        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
         style={draggableProps?.style}
     >
       <div className="flex justify-center items-center w-4 text-right tabular-nums">

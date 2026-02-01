@@ -94,7 +94,7 @@ Phase 5: Final Polish & Deployment
 
 [x] Add "Glassmorphism" effects to the sidebar and player bar.
 
-[ ] Deploy to Vercel.
+[x] Deploy to Vercel.
 
 Phase 6: Optional Future Features
 

@@ -26,7 +26,7 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
     const minutes = Math.floor((totalDurationMs % 3600000) / 60000)
 
     return (
-        <div className="bg-gradient-to-b from-indigo-900/50 to-zinc-950 min-h-full pb-8">
+        <div className="bg-gradient-to-b from-indigo-950/80 to-zinc-950 min-h-full pb-8">
             <HistoryPanel 
                 track={selectedTrack} 
                 onClose={() => setSelectedTrack(null)} 
@@ -57,7 +57,7 @@ export function PlaylistView({ playlist, tracks }: PlaylistViewProps) {
                 {/* Content Layer */}
                 <div className="relative z-10 p-8">
                     {/* Table Header */}
-                    <div className="grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-400 uppercase tracking-wider mb-4 sticky top-0 bg-[#121212] z-10">
+                    <div className="grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 border-b border-white/10 text-xs font-medium text-zinc-300 uppercase tracking-wider mb-4 sticky top-16 bg-black/30 backdrop-blur-sm z-20">
                         <div className="text-right">#</div>
                         <div>Title</div>
                         <div>Album</div>
