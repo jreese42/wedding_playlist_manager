@@ -16,6 +16,7 @@ interface TrackRowProps {
   isDragging?: boolean
   isMainList?: boolean
   playlistSpotifyId: string | null
+  onClick?: () => void
 }
 
 function formatDuration(ms: number | null) {
@@ -66,7 +67,7 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
     )
 }
 
-export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true, playlistSpotifyId }: TrackRowProps) {
+export function TrackRow({ track, index, dragHandleProps, draggableProps, innerRef, isDragging, isMainList = true, playlistSpotifyId, onClick }: TrackRowProps) {
   
   const trackSpotifyId = track.spotify_uri?.split(':').pop()
   const spotifyTrackUrl = track.spotify_uri && playlistSpotifyId 
@@ -78,7 +79,8 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
         ref={innerRef}
         {...draggableProps}
         {...dragHandleProps}
-        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/10 rounded-md items-center transition-colors ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
+        onClick={onClick}
+        className={`group grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-400 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
         style={draggableProps?.style}
     >
       <div className="flex justify-center items-center w-4 text-right tabular-nums">

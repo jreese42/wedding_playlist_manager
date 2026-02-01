@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 
 export async function moveTrack(playlistId: string, trackId: string, newPosition: number, oldPosition: number) {
@@ -72,3 +73,34 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
 
     revalidatePath('/playlist/[slug]', 'layout')
 }
+
+export async function getTrackHistory(trackId: string) {
+    const supabase = await createClient()
+    const adminAuthClient = createAdminClient() // Needed to get user emails from auth.users
+
+    // 1. Get logs
+    const { data: logs, error } = await supabase
+        .from('audit_log')
+        .select('*')
+        .eq('track_id', trackId)
+        .order('created_at', { ascending: false })
+
+    if (error) throw new Error(error.message)
+    if (!logs) return []
+
+    // 2. Hydrate with user emails (inefficient n+1 but fine for small scale)
+    const hydratedLogs = await Promise.all(logs.map(async (log) => {
+        let userEmail = 'Unknown'
+        if (log.user_id) {
+            const { data: { user }, error: userError } = await adminAuthClient.auth.admin.getUserById(log.user_id)
+            if (user) userEmail = user.email || 'No Email'
+        }
+        return {
+            ...log,
+            user_email: userEmail
+        }
+    }))
+
+    return hydratedLogs
+}
+

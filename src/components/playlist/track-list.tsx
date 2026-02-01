@@ -12,9 +12,10 @@ interface TrackListProps {
     initialTracks: Track[]
     playlistId: string
     playlistSpotifyId: string | null
+    onSelectTrack: (trackId: string) => void
 }
 
-export function TrackList({ initialTracks, playlistId, playlistSpotifyId }: TrackListProps) {
+export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSelectTrack }: TrackListProps) {
     // We need to ensure we only render DnD on the client to avoid hydration mismatch
     const [enabled, setEnabled] = useState(false)
     const [tracks, setTracks] = useState(initialTracks)
@@ -64,7 +65,13 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId }: Trac
         return (
             <div className="space-y-1">
                 {tracks.map((track, i) => (
-                    <TrackRow key={track.id} track={track} index={i} playlistSpotifyId={playlistSpotifyId} />
+                    <TrackRow 
+                        key={track.id} 
+                        track={track} 
+                        index={i} 
+                        playlistSpotifyId={playlistSpotifyId}
+                        onClick={() => onSelectTrack(track.id)}
+                    />
                 ))}
             </div>
         )
@@ -86,6 +93,7 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId }: Trac
                                         track={track}
                                         index={index}
                                         playlistSpotifyId={playlistSpotifyId}
+                                        onClick={() => onSelectTrack(track.id)}
                                         innerRef={provided.innerRef}
                                         draggableProps={provided.draggableProps}
                                         dragHandleProps={provided.dragHandleProps}
