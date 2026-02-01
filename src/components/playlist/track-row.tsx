@@ -74,6 +74,9 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
     ? `https://open.spotify.com/playlist/${playlistSpotifyId}?highlight=${encodeURIComponent(track.spotify_uri)}`
     : `https://open.spotify.com/track/${track.spotify_uri?.split(':').pop()}`
 
+  const artistSpotifyUrl = track.artist_spotify_uri ? `https://open.spotify.com/artist/${track.artist_spotify_uri.split(':').pop()}` : '#'
+  const albumSpotifyUrl = track.album_spotify_uri ? `https://open.spotify.com/album/${track.album_spotify_uri.split(':').pop()}` : '#'
+
   return (
     <div 
         ref={innerRef}
@@ -110,9 +113,25 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
             <div className="h-10 w-10 bg-zinc-800 rounded flex-shrink-0" />
         )}
         <div className="flex flex-col min-w-0 overflow-hidden">
-          <span className="text-white font-medium truncate">{track.title}</span>
+          <a 
+            href={spotifyTrackUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-white font-medium truncate hover:underline"
+          >
+            {track.title}
+          </a>
           <span className="truncate group-hover:text-white transition-colors">
-              {track.artist}
+              <a 
+                href={artistSpotifyUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="hover:underline"
+              >
+                {track.artist}
+              </a>
               {track.status === 'rejected' && <span className="ml-2 text-xs text-red-500 font-bold uppercase">(Rejected)</span>}
               {track.status === 'suggested' && !isMainList && <span className="ml-2 text-xs text-blue-400 font-bold uppercase">(Suggested)</span>}
           </span>
@@ -128,9 +147,15 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
       </div>
 
       <div className="flex items-center truncate min-w-0">
-        <span className="truncate group-hover:text-white transition-colors">
+        <a 
+          href={albumSpotifyUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="truncate group-hover:text-white transition-colors hover:underline"
+        >
             {track.album}
-        </span>
+        </a>
       </div>
 
       <div className="flex items-center justify-center">

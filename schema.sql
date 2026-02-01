@@ -23,6 +23,8 @@ create table tracks (
   album text,
   artwork_url text,
   spotify_uri text,
+  artist_spotify_uri text,
+  album_spotify_uri text,
   duration_ms integer,
   rating integer default 0,
   status text check (status in ('active', 'suggested', 'rejected')) default 'suggested',

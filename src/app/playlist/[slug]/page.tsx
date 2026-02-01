@@ -32,7 +32,24 @@ async function getPlaylist(slug: string) {
     // 2. Get tracks
     const { data: allTracks } = await supabase
         .from('tracks')
-        .select('*')
+        .select(`
+            id, 
+            playlist_id, 
+            title, 
+            artist, 
+            album, 
+            artwork_url, 
+            spotify_uri, 
+            duration_ms, 
+            status, 
+            rating, 
+            position, 
+            pinned_comment, 
+            added_by, 
+            created_at,
+            artist_spotify_uri,
+            album_spotify_uri
+        `)
         .eq('playlist_id', playlist.id)
         .order('position', { ascending: true }) // Order by our custom position
     

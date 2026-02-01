@@ -155,6 +155,7 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
             // For now, let's just ensure they exist.
             
             let addedCount = 0;
+            let updatedCount = 0;
             
             // Get current max position
             const { data: maxPosData } = await supabase.from('tracks')
@@ -167,10 +168,22 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
             let currentPosition = (maxPosData?.position || 0) + 1
 
             for (const item of allTracks) {
-                if (!item.track) continue;
+                if (!item.track || !item.track.uri) continue;
                 
-                const track = item.track;
+                const track = item.track as SpotifyApi.TrackObjectFull;
                 const spotify_uri = track.uri;
+
+                const trackData = {
+                    playlist_id: playlist.id,
+                    title: track.name,
+                    artist: track.artists.map(a => a.name).join(', '),
+                    album: track.album.name,
+                    artwork_url: track.album.images[0]?.url,
+                    spotify_uri: spotify_uri,
+                    artist_spotify_uri: track.artists[0]?.uri, // Link to primary artist
+                    album_spotify_uri: track.album.uri,
+                    duration_ms: track.duration_ms,
+                }
 
                 // Check if exists
                 const { data: existing } = await supabase.from('tracks')
@@ -182,21 +195,19 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
                 if (!existing) {
                     // Add new track
                     await supabase.from('tracks').insert({
-                        playlist_id: playlist.id,
-                        title: track.name,
-                        artist: track.artists.map(a => a.name).join(', '),
-                        album: track.album.name,
-                        artwork_url: track.album.images[0]?.url,
-                        spotify_uri: spotify_uri,
-                        duration_ms: track.duration_ms,
+                        ...trackData,
                         status: 'active', // Sync from Spotify is considered "Approved/Active" by default
                         position: currentPosition
                     })
                     currentPosition++;
                     addedCount++;
+                } else {
+                    // Update existing track
+                    await supabase.from('tracks').update(trackData).eq('id', existing.id)
+                    updatedCount++;
                 }
             }
-            results.push({ playlist: playlist.title, added: addedCount, total: allTracks.length })
+            results.push({ playlist: playlist.title, added: addedCount, updated: updatedCount, total: allTracks.length })
 
         } catch (e: any) {
             console.error(`Error syncing playlist ${playlist.title}:`, e)

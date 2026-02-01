@@ -48,6 +48,8 @@ export type Database = {
           album: string | null
           artwork_url: string | null
           spotify_uri: string | null
+          artist_spotify_uri: string | null
+          album_spotify_uri: string | null
           duration_ms: number | null
           status: 'active' | 'suggested' | 'rejected'
           rating: number | null
@@ -64,6 +66,8 @@ export type Database = {
           album?: string | null
           artwork_url?: string | null
           spotify_uri?: string | null
+          artist_spotify_uri?: string | null
+          album_spotify_uri?: string | null
           duration_ms?: number | null
           status?: 'active' | 'suggested' | 'rejected'
           rating?: number | null
@@ -80,6 +84,8 @@ export type Database = {
           album?: string | null
           artwork_url?: string | null
           spotify_uri?: string | null
+          artist_spotify_uri?: string | null
+          album_spotify_uri?: string | null
           duration_ms?: number | null
           status?: 'active' | 'suggested' | 'rejected'
           rating?: number | null
