@@ -72,7 +72,8 @@ export function SpotifySearch({ playlistId, status, placeholder, className, onTr
                 setQuery('')
                 setResults([])
                 setIsOpen(false)
-                // Notify parent of the new track with the database record
+                // Notify parent of the new track with the database record (if callback provided)
+                // Note: This is optional now - realtime subscription handles UI updates
                 if (onTrackAdded && addedTrack) {
                     onTrackAdded(addedTrack)
                 }

@@ -227,7 +227,8 @@ export function AIAssistantModal({
       // Clear selection
       setSelectedSongs(new Set())
 
-      // Notify parent
+      // Notify parent (if callback provided)
+      // Note: This is optional now - realtime subscription handles UI updates
       if (onSongsAdded) {
         onSongsAdded(addedTracks)
       }

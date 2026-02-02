@@ -180,14 +180,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
         setPlaylistTracks(prev => prev.filter(t => t.id !== trackId))
     }
 
-    const handleTrackAdded = (track: any) => {
-        // Add new track to state
-        setPlaylistTracks(prev => [...prev, {
-            ...track,
-            profiles: null
-        } as Track])
-    }
-
     const handlePinComment = (trackId: string, comment: string | null) => {
         // Update track's pinned_comment in state
         setPlaylistTracks(prev => prev.map(t =>
@@ -270,7 +262,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                             status="active" 
                             placeholder="Add a song to this playlist..."
                             className="relative mb-4 md:mb-6 w-full md:max-w-xl mx-auto"
-                            onTrackAdded={handleTrackAdded}
                         />
                     </div>
 
@@ -332,7 +323,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                     status="suggested" 
                                     placeholder="Suggest a song..."
                                     className="relative flex-1"
-                                    onTrackAdded={handleTrackAdded}
                                 />
                                 <button
                                     onClick={() => setIsAIModalOpen(true)}
@@ -353,13 +343,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                 onClose={() => setIsAIModalOpen(false)}
                 playlist={playlist}
                 existingTracks={playlistTracks}
-                onSongsAdded={(newSongs) => {
-                    const songsWithProfiles = newSongs.map(song => ({
-                        ...song,
-                        profiles: null,
-                    })) as Track[]
-                    setPlaylistTracks(prev => [...prev, ...songsWithProfiles])
-                }}
             />
         </div>
     )
