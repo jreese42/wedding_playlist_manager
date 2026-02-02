@@ -65,7 +65,7 @@ export function TourOverlay() {
       window.removeEventListener('scroll', updatePosition)
       window.removeEventListener('resize', updatePosition)
     }
-  }, [isActive, currentStep])
+  }, [isActive, currentStep, isMobile])
 
   if (!isActive || !currentStep) {
     return null

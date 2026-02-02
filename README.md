@@ -1,20 +1,176 @@
-# Collaborative Music Planning App
+# 🎵 Collaborative Playlist Manager
 
-This is a private, web-based dashboard designed to help collaboratively plan the music for a wedding. It provides a Spotify-inspired interface where a small group of approved users can curate, reorder, and rate songs across six distinct wedding playlists.
+A modern web app for teams that want to **plan playlists together** with **full discussion, auditing, and clarity of changes**.
 
-*   **Collaborative Playlisting**: Multiple users can view and edit playlists in real-time.
-*   **Drag-and-Drop Reordering**: Intuitively change the song order for each playlist.
-*   **Song Ratings**: A 5-star rating system to gather feedback on each track.
-*   **Suggestions & History**: "Deleted" songs are moved to a suggestions list for review, and a full audit trail tracks every change.
-*   **Spotify Integration**: Playlists are seeded and synced from existing Spotify playlists.
+Ever tried to create a collaborative Spotify playlist with friends? You get chaos: duplicate suggestions, random deletions, no context for why songs were chosen, and no way to discuss before adding. **This app fixes that.**
 
-*   **Frontend**: [Next.js](https://nextjs.org/) with [React](https://reactjs.org/) and [Tailwind CSS](https://tailwindcss.com/) for a dynamic, server-rendered application.
-*   **Backend & Database**: [Supabase](https://supabase.io/) provides the PostgreSQL database, user authentication, and real-time capabilities.
-*   **Authentication**: Secure authentication is handled by Supabase, limited to a specific allowlist of users.
-*   **Deployment**: The application is designed for easy deployment on [Vercel](https://vercel.com/).
+## Why Use This Instead of Spotify Collaborative Playlists?
 
-## Design Principles
+| Feature | Spotify Collab | This App |
+|---------|---|---|
+| **Comments & Discussion** | ❌ | ✅ Pin comments directly to songs |
+| **Suggestions Before Adding** | ❌ | ✅ Suggest → Discuss → Approve workflow |
+| **Full Audit Trail** | ❌ | ✅ See who changed what, when, and why |
+| **AI Song Suggestions** | ❌ | ✅ Ask AI to find songs matching your vibe |
+| **Reject & Revisit** | ❌ | ✅ Reject suggestions without losing them |
+| **Quality Control** | ❌ | ✅ Approve songs before they're added |
+| **Real-Time Sync** | ✅ | ✅ Instant updates for all users |
+| **Mobile Support** | ✅ | ✅ Full mobile experience |
 
-1.  **The "Audit" Engine**: Every significant action (reordering, rating, status change) is logged in an `audit_log` table, providing a complete history of changes for each track.
-2.  **The "Sync" Engine**: An admin-only feature allows for pulling in the latest tracks from a linked Spotify playlist, appending new songs without disrupting the existing curated order.
-3.  **Real-Time Sync**: Leveraging Supabase Realtime, any changes made by one user are instantly reflected on the screens of all other active users without needing a page refresh.
+## Who Is This For?
+
+This app is perfect for:
+
+- 👰 **Wedding Planning** - Coordinate ceremony, reception, and dinner music with your partner and friends
+- 🎉 **Event Playlists** - DJ a birthday party, corporate event, or road trip with full team input
+- 🎓 **Club/Organization Curation** - Build a collective music library with discussion and voting
+- 🎬 **Film/Project Soundtracks** - Collaborate on curated music for creative projects
+
+**Key requirement**: You care about the final result and want **meaningful discussion** before music is added.
+
+---
+
+## Features
+
+### 💬 Collaborative Discussion
+- **Pin comments** on any song to highlight important context
+- **Comment history** shows who said what and when
+- Comments stay with the track so context is never lost
+
+### 📊 Quality Control
+- Add songs as **suggestions** first
+- **Team reviews** before moving to active playlist
+- **Reject** songs without losing them in the ether
+- **Approve** when everyone agrees
+
+### 🔍 Full Auditing
+- Complete history of every change
+- See **who** added, reordered, or rated each song
+- Understand **why** decisions were made through comments
+- Export audit logs for reference
+
+### 🤖 AI-Powered Suggestions
+- Describe the vibe: *"upbeat 80s rock"* or *"chill acoustic love songs"*
+- AI finds matching tracks from Spotify
+- Auto-adds to suggestions for team review
+
+### ⭐ Rating System
+- 5-star ratings for team feedback
+- See at a glance what tracks need discussion
+
+### 🔄 Real-Time Sync
+- Changes appear instantly for all users
+- No refresh needed
+- Works on desktop and mobile
+
+### 🎯 Spotify Integration
+- Seed playlists from your existing Spotify playlists
+- Sync new songs from Spotify without losing your curation
+- Push final playlist back to Spotify
+
+---
+
+## Tech Stack
+
+- **Frontend**: [Next.js 14](https://nextjs.org/) + [React 18](https://react.dev/) + [Tailwind CSS](https://tailwindcss.com/)
+- **Backend**: [Supabase](https://supabase.com/) (PostgreSQL + Auth + Realtime)
+- **APIs**: [Spotify Web API](https://developer.spotify.com/) + [Claude AI](https://claude.ai/)
+- **Deployment**: [Vercel](https://vercel.com/) (one-click)
+- **Drag & Drop**: [@hello-pangea/dnd](https://github.com/hello-pangea/dnd)
+
+---
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- Spotify Developer account
+- Supabase account
+- Vercel account (for deployment)
+
+### Local Development
+
+```bash
+# 1. Clone and install
+git clone <your-repo>
+cd collaborative-playlist-manager
+npm install
+
+# 2. Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your Spotify and Supabase keys
+
+# 3. Run dev server
+npm run dev
+
+# Open http://localhost:3000
+```
+
+### Full Setup Guide
+
+See **[docs/SETUP.md](docs/SETUP.md)** for detailed instructions on:
+- Setting up Supabase database
+- Configuring Spotify integration
+- Deploying to Vercel
+- Adding users and playlists
+
+---
+
+## Environment Setup
+
+Create `.env.local`:
+
+```env
+# Supabase
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Spotify
+NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id
+SPOTIFY_CLIENT_SECRET=your_client_secret
+
+# Admin Email
+ADMIN_EMAIL=admin@example.com
+```
+
+See **[docs/SETUP.md](docs/SETUP.md)** for where to get each key.
+
+---
+
+## Deployment
+
+### Vercel (Recommended)
+
+```bash
+git push  # Push to GitHub
+# Go to vercel.com and import your repo
+# Add environment variables
+# Deploy!
+```
+
+Your app is live. Share the URL with your team.
+
+See **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)** for more options.
+
+---
+
+## Contributing
+
+Found a bug? Have a feature idea? Issues and PRs welcome!
+
+---
+
+## License
+
+[MIT](LICENSE)
+
+---
+
+## The Story
+
+This app was built for real-world collaborative music planning. After struggling with Spotify's limited collaboration features, we built a tool that actually lets teams **discuss and decide together** on music.
+
+Perfect for weddings, events, and any project where music matters and so does the team.
+
+**Ready to plan together?** [Get Started](docs/SETUP.md)

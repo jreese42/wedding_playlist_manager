@@ -27,6 +27,7 @@ type HistoryItem = {
 export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps) {
     const [history, setHistory] = useState<HistoryItem[]>([])
     const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
     const [isOpen, setIsOpen] = useState(false)
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
     const [pinnedComment, setPinnedComment] = useState<string | null>(null)
@@ -36,11 +37,17 @@ export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps
         const id = trackId || currentTrack?.id
         if (!id) return;
         setLoading(true)
+        setError(null)
         getTrackHistory(id)
             .then((data: any) => {
                 setHistory(data)
+                setError(null)
             })
-            .catch((err) => console.error(err))
+            .catch((err) => {
+                console.error('Failed to fetch history:', err)
+                setError('Failed to load activity history')
+                setHistory([])
+            })
             .finally(() => setLoading(false))
     }
 
@@ -62,14 +69,25 @@ export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps
     const handlePin = (comment: string | null) => {
         if (!currentTrack) return;
 
+        // Store previous state for rollback
+        const previousComment = pinnedComment
+
         // Update state IMMEDIATELY for instant UI feedback - this MUST happen synchronously
         setPinnedComment(comment)
         setCurrentTrack({ ...currentTrack, pinned_comment: comment })
         onPinComment?.(currentTrack.id, comment)
 
-        // Then persist to server
+        // Then persist to server with error handling
         startTransition(async () => {
-            await pinComment(currentTrack.id, comment)
+            try {
+                await pinComment(currentTrack.id, comment)
+            } catch (err) {
+                console.error('Failed to pin comment:', err)
+                // Rollback on error
+                setPinnedComment(previousComment)
+                setCurrentTrack(prev => prev ? { ...prev, pinned_comment: previousComment } : null)
+                setError('Failed to pin comment')
+            }
         })
     }
     
