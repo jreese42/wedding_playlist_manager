@@ -148,7 +148,7 @@ create policy "Only authenticated users can update app settings" on app_settings
 
 -- Insert default app settings
 insert into app_settings (key, value, description) values
-  ('page_title', 'Dana & Justin Wedding Playlists', 'Title shown in browser tab'),
-  ('homepage_text', 'Welcome to the Wedding Playlist Manager', 'Main heading text on homepage'),
+  ('page_title', 'Playlist Manager', 'Title shown in browser tab'),
+  ('homepage_text', 'Welcome to the Playlist Manager', 'Main heading text on homepage'),
   ('homepage_subtitle', 'Collaborate on the perfect playlist for the big day', 'Subtitle text on homepage')
 on conflict (key) do nothing;

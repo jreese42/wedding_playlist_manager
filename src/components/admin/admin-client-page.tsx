@@ -3,7 +3,18 @@
 import Link from 'next/link'
 import { useActionState, useState, useEffect } from 'react'
 import { seedPlaylists, syncTracksFromSpotify, type ActionState } from '@/app/admin/actions'
-import { Users, Settings } from 'lucide-react'
+import { Users } from 'lucide-react'
+import { AdminSettingsClient } from './admin-settings-client'
+
+interface AppSetting {
+  key: string
+  value: string | null
+  description: string | null
+}
+
+interface AdminClientPageProps {
+  initialSettings?: AppSetting[]
+}
 
 const initialState: ActionState = {
     results: [],
@@ -12,7 +23,7 @@ const initialState: ActionState = {
     logs: []
 }
 
-export function AdminClientPage() {
+export function AdminClientPage({ initialSettings = [] }: AdminClientPageProps) {
     const [seedState, seedAction, isSeeding] = useActionState(seedPlaylists, initialState)
     const [syncState, syncAction, isSyncing] = useActionState(syncTracksFromSpotify, initialState)
     const [isModalOpen, setIsModalOpen] = useState(false)
@@ -33,11 +44,15 @@ export function AdminClientPage() {
                     <Users size={18} />
                     Manage Users
                 </Link>
-                <Link href="/admin/settings" className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 rounded-lg transition-colors">
-                    <Settings size={18} />
-                    App Settings
-                </Link>
             </div>
+
+            {/* App Settings Section */}
+            {initialSettings.length > 0 && (
+                <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                    <h2 className="text-xl font-semibold mb-6">App Settings</h2>
+                    <AdminSettingsClient initialSettings={initialSettings} />
+                </div>
+            )}
 
             {/* Modal */}
             {isModalOpen && (
@@ -69,7 +84,7 @@ export function AdminClientPage() {
             </div>
             )}
 
-            <div className="grid gap-8 md:grid-cols-2">
+            <div className="grid gap-8">
             {/* Seed Playlists Card */}
             <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-6">
                 <h2 className="text-xl font-semibold mb-2">1. Seed Playlists</h2>

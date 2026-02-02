@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 
@@ -24,19 +25,22 @@ export async function updateAppSettings(updates: Array<{ key: string; value: str
     const isAdmin = await checkIfAdmin()
     if (!isAdmin) throw new Error('Unauthorized')
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for both update and verification
+    const adminSupabase = createAdminClient()
 
     for (const { key, value } of updates) {
-        const { error } = await supabase
+        const { error } = await (adminSupabase as any)
             .from('app_settings')
             .update({ value, updated_at: new Date().toISOString() })
             .eq('key', key)
+            .select()
 
         if (error) {
-            console.error('Failed to update app setting:', error)
+            console.error(`Failed to update app setting ${key}:`, error)
             throw new Error(error.message)
         }
     }
 
     revalidatePath('/', 'layout')
+    revalidatePath('/')
 }

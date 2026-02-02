@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { PlaylistCard } from '@/components/home/playlist-card'
 import { revalidatePath } from 'next/cache'
 
@@ -12,6 +13,17 @@ export const revalidate = 0 // Disable caching for homepage
 
 export default async function Home() {
   const supabase = await createClient()
+  const adminSupabase = createAdminClient()
+  
+  // Fetch app settings using admin client (has access to app_settings table)
+  const { data: appSettingsArray = [] } = await (adminSupabase as any)
+    .from('app_settings')
+    .select('key, value')
+  
+  const appSettings = appSettingsArray.reduce((acc: Record<string, string>, setting: any) => ({
+    ...acc,
+    [setting.key]: setting.value
+  }), {} as Record<string, string>)
   
   // Fetch playlists - use explicit columns to avoid schema cache issues
   const { data: playlists } = await supabase
@@ -33,10 +45,10 @@ export default async function Home() {
       <div className="max-w-4xl mx-auto">
         <header className="text-center mb-16">
           <h1 className="text-5xl lg:text-7xl font-black tracking-tighter mb-4 bg-gradient-to-r from-white to-zinc-500 text-transparent bg-clip-text pb-2">
-            Dana and Kyle's Wedding Playlists
+            {appSettings['homepage_text'] || 'Collaborative Playlists'}
           </h1>
           <p className="text-lg text-zinc-400 max-w-2xl mx-auto">
-            Your dashboard for collaboratively curating the perfect soundtrack for the big day. Click a playlist to start organizing.
+            {appSettings['homepage_subtitle'] || 'Your dashboard for collaboratively curating the perfect soundtrack. Click a playlist to start organizing.'}
           </p>
         </header>
 

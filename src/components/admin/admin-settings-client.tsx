@@ -15,8 +15,31 @@ interface AdminSettingsClientProps {
 }
 
 export function AdminSettingsClient({ initialSettings }: AdminSettingsClientProps) {
+  // Create a map of settings from the array
+  const settingMap = initialSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value || '' }), {} as Record<string, string>)
+
+  // Define the setting config first so we can ensure all keys are initialized
+  const settingConfig = [
+    {
+      key: 'page_title',
+      label: 'Browser Tab Title',
+      description: 'The title shown in the browser tab and page header'
+    },
+    {
+      key: 'homepage_text',
+      label: 'Homepage Main Text',
+      description: 'The main heading text displayed on the homepage'
+    },
+    {
+      key: 'homepage_subtitle',
+      label: 'Homepage Subtitle',
+      description: 'The subtitle text displayed below the main heading on the homepage'
+    }
+  ]
+
+  // Initialize settings with all keys, using values from settingMap or defaults to empty string
   const [settings, setSettings] = useState<Record<string, string>>(
-    initialSettings.reduce((acc, s) => ({ ...acc, [s.key]: s.value || '' }), {})
+    settingConfig.reduce((acc, { key }) => ({ ...acc, [key]: settingMap[key] || '' }), {})
   )
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
   const [isPending, startTransition] = useTransition()
@@ -46,24 +69,6 @@ export function AdminSettingsClient({ initialSettings }: AdminSettingsClientProp
       }
     })
   }
-
-  const settingConfig = [
-    {
-      key: 'page_title',
-      label: 'Browser Tab Title',
-      description: 'The title shown in the browser tab and page header'
-    },
-    {
-      key: 'homepage_text',
-      label: 'Homepage Main Text',
-      description: 'The main heading text displayed on the homepage'
-    },
-    {
-      key: 'homepage_subtitle',
-      label: 'Homepage Subtitle',
-      description: 'The subtitle text displayed below the main heading on the homepage'
-    }
-  ]
 
   return (
     <div className="space-y-6">

@@ -8,13 +8,33 @@ import { MobileMenuProvider } from "@/lib/mobile-menu-context";
 import { TourProvider } from "@/lib/tour-context";
 import { TourOverlay } from "@/components/tour/tour-overlay";
 import { TourTrigger } from "@/components/tour/tour-trigger";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
-export const metadata: Metadata = {
-  title: "Dana's Wedding Playlist",
-  description: "Collaborative wedding playlist planner",
-};
+async function getAppTitle() {
+  try {
+    const adminSupabase = createAdminClient()
+    const { data: settings = [] } = await (adminSupabase as any)
+      .from('app_settings')
+      .select('key, value')
+      .eq('key', 'page_title')
+      .single()
+    
+    return settings?.value || 'Playlist Manager'
+  } catch (error) {
+    return 'Playlist Manager'
+  }
+}
+
+export async function generateMetadata(): Promise<Metadata> {
+  const title = await getAppTitle()
+  
+  return {
+    title,
+    description: "Collaborative playlist curator",
+  }
+}
 
 export default function RootLayout({
   children,
