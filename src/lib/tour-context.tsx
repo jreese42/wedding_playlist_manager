@@ -6,7 +6,8 @@ export interface TourStep {
   id: string
   title: string
   description: string
-  targetSelector: string // CSS selector for the element to highlight
+  targetSelector: string // CSS selector for the element to highlight (desktop)
+  targetSelectorMobile?: string // CSS selector for mobile view (optional)
   position?: 'top' | 'bottom' | 'left' | 'right'
   highlightPadding?: number
   showHighlight?: boolean

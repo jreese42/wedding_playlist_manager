@@ -16,8 +16,9 @@ export function MobileSidebar() {
   const [user, setUser] = useState<any>(null)
   const [playlists, setPlaylists] = useState<Playlist[]>([])
   const [isAdmin, setIsAdmin] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(true)
 
+  // Fetch data once on mount, not just when sidebar opens
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -28,14 +29,12 @@ export function MobileSidebar() {
       } catch (error) {
         console.error('Error fetching mobile sidebar data:', error)
       } finally {
-        setLoading(false)
+        setIsLoading(false)
       }
     }
 
-    if (isOpen) {
-      fetchData()
-    }
-  }, [isOpen])
+    fetchData()
+  }, [])
 
   const handleLogout = async () => {
     const { createClient } = await import('@/lib/supabase/client')
@@ -86,7 +85,7 @@ export function MobileSidebar() {
             </Link>
           </div>
           <div className="space-y-1">
-            {loading ? (
+            {isLoading ? (
               <p className="px-4 py-2 text-xs text-zinc-500">Loading playlists...</p>
             ) : !playlists || playlists.length === 0 ? (
               <p className="px-4 py-2 text-xs text-zinc-500">No playlists yet. Click the edit button to add one.</p>

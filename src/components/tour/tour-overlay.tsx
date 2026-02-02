@@ -15,12 +15,25 @@ interface ElementPosition {
 export function TourOverlay() {
   const { isActive, currentStep, currentStepIndex, steps, nextStep, prevStep, endTour, skipTour } = useTour()
   const [elementPosition, setElementPosition] = useState<ElementPosition | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768)
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   useEffect(() => {
     if (!isActive || !currentStep) return
 
     const updatePosition = () => {
-      const element = document.querySelector(currentStep.targetSelector)
+      // Choose selector based on viewport size
+      const selector = isMobile && currentStep.targetSelectorMobile 
+        ? currentStep.targetSelectorMobile 
+        : currentStep.targetSelector
+
+      const element = document.querySelector(selector)
       if (element) {
         const rect = element.getBoundingClientRect()
         setElementPosition({
@@ -31,7 +44,7 @@ export function TourOverlay() {
         })
       } else {
         // Element not found - set a default centered position
-        console.warn(`Tour element not found: ${currentStep.targetSelector}`)
+        console.warn(`Tour element not found: ${selector}`)
         setElementPosition({
           top: window.innerHeight / 2,
           left: window.innerWidth / 2,

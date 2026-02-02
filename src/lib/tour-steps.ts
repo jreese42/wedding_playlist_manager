@@ -32,7 +32,7 @@ export const WELCOME_TOUR_STEPS: TourStep[] = [
     id: 'activity-view',
     title: 'Activity & Comments',
     description:
-      'When you click a song, its activity panel opens here. View comments from collaborators, leave your own, and see pinned important messages.',
+      'When you click a song, its activity panel opens here. View comments from collaborators and leave your own.',
     targetSelector: '[data-tour="activity-panel"]',
     position: 'left',
     highlightPadding: 0,
@@ -46,10 +46,19 @@ export const WELCOME_TOUR_STEPS: TourStep[] = [
         }
       }
     },
+  },
+  {
+    id: 'pinned-comments',
+    title: 'Pin Important Comments',
+    description:
+      'In the activity panel, click the pin icon next to any comment to pin it. Pinned comments appear directly in the playlist view so everyone sees important notes about that song.',
+    targetSelector: '[data-tour="activity-panel"]',
+    position: 'left',
+    highlightPadding: 0,
+    showHighlight: false,
     onExit: () => {
       // Close activity panel when exiting this step
       if (typeof window !== 'undefined') {
-        // Try multiple selectors to find the close button
         const closeButton = 
           document.querySelector('[data-tour="activity-panel"] button:first-of-type') ||
           document.querySelector('[data-tour="activity-panel"] button[class*="top"]') ||
@@ -60,6 +69,15 @@ export const WELCOME_TOUR_STEPS: TourStep[] = [
         }
       }
     },
+  },
+  {
+    id: 'ai-assistant',
+    title: 'AI-Powered Song Suggestions',
+    description:
+      'Need help finding songs? Click the sparkle icon (✨) to open the AI Assistant. Tell it what kind of songs you want—describe the mood, artist, genre, or vibe—and it will suggest songs to add to the playlist automatically.',
+    targetSelector: '[data-tour="add-songs-bar"]',
+    position: 'bottom',
+    highlightPadding: 8,
   },
   {
     id: 'add-songs',

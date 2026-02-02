@@ -108,7 +108,7 @@ Phase 6: Optional Future Features
 
 [x] **Page Tour Onboarding**: Add an onboarding feature the first time a user logs in that shows a page tour. Explain to the user how to see playlists, reorder add and remove songs, review recommendations, use the AI assistant, and rate songs. Include a button to trigger the tour again.
 
-[ ] Add AI Agent to Onboarding Tour. Add Pinned Comments to Onboarding Tour.
+[x] Add AI Agent to Onboarding Tour. Add Pinned Comments to Onboarding Tour.
 
 [x] More Clickable Links: When storing a track in the database, also store links to the artist so the artist name can be clickable and opens the artist profile in spotify.
 
