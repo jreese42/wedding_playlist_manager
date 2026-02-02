@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Database } from '@/lib/database.types'
 import { Clock, Music, Play, Sparkles } from 'lucide-react'
 import { TrackList } from '@/components/playlist/track-list'
@@ -10,6 +10,7 @@ import { SpotifySearch } from '@/components/playlist/spotify-search'
 import { SyncStatus } from '@/components/playlist/sync-status'
 import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
 import { AIAssistantModal } from '@/components/ai-assistant-modal'
+import { createClient } from '@/lib/supabase/client'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row'] & {
@@ -28,6 +29,121 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const [showRemoved, setShowRemoved] = useState(false)
     const [isAIModalOpen, setIsAIModalOpen] = useState(false)
     const [playlistTracks, setPlaylistTracks] = useState(tracks)
+    
+    // Setup real-time subscription for track changes
+    useEffect(() => {
+        const supabase = createClient()
+        console.log('[Realtime] Setting up subscription for playlist:', playlist.id)
+        
+        let channel: any
+        let pollInterval: NodeJS.Timeout | null = null
+        
+        // Start polling as fallback
+        const startPolling = () => {
+            if (pollInterval) return // Already running
+            console.log('[Polling] 🔄 Starting slow polling fallback (30 second interval)')
+            
+            pollInterval = setInterval(async () => {
+                try {
+                    const { data } = await supabase
+                        .from('tracks')
+                        .select('*')
+                        .eq('playlist_id', playlist.id)
+                    
+                    if (data) {
+                        // Only update if something changed
+                        const dataStr = JSON.stringify(data.sort((a: any, b: any) => a.id.localeCompare(b.id)))
+                        const prevStr = JSON.stringify(playlistTracks.sort((a, b) => a.id.localeCompare(b.id)))
+                        
+                        if (dataStr !== prevStr) {
+                            console.log('[Polling] 📡 Detected changes via polling')
+                            setPlaylistTracks(data as Track[])
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Polling] ❌ Error polling for updates:', error)
+                }
+            }, 30000) // Poll every 30 seconds
+        }
+        
+        try {
+            channel = supabase
+                .channel(`tracks-${playlist.id}`)
+                .on(
+                    'postgres_changes',
+                    {
+                        event: '*',
+                        schema: 'public',
+                        table: 'tracks',
+                        filter: `playlist_id=eq.${playlist.id}`
+                    },
+                    (payload) => {
+                        console.log('[Realtime] Received payload:', payload)
+                        
+                        // Handle INSERT event
+                        if (payload.eventType === 'INSERT') {
+                            console.log('[Realtime] INSERT event for track:', payload.new)
+                            const newTrack = payload.new as Track
+                            setPlaylistTracks(prev => {
+                                // Check if track already exists (avoid duplicates)
+                                if (prev.some(t => t.id === newTrack.id)) {
+                                    console.log('[Realtime] Track already exists, skipping')
+                                    return prev
+                                }
+                                console.log('[Realtime] Adding new track to state')
+                                return [...prev, newTrack]
+                            })
+                        }
+                        // Handle UPDATE event
+                        else if (payload.eventType === 'UPDATE') {
+                            console.log('[Realtime] UPDATE event for track:', payload.new)
+                            const updatedTrack = payload.new as Track
+                            setPlaylistTracks(prev => prev.map(t => 
+                                t.id === updatedTrack.id ? updatedTrack : t
+                            ))
+                        }
+                        // Handle DELETE event
+                        else if (payload.eventType === 'DELETE') {
+                            console.log('[Realtime] DELETE event for track:', payload.old)
+                            const deletedTrack = payload.old as Track
+                            setPlaylistTracks(prev => prev.filter(t => t.id !== deletedTrack.id))
+                        }
+                    }
+                )
+                .subscribe((status) => {
+                    console.log('[Realtime] Subscription status:', status)
+                    if (status === 'SUBSCRIBED') {
+                        console.log('[Realtime] ✅ Successfully subscribed to changes')
+                        // Disable polling if realtime connected
+                        if (pollInterval) {
+                            clearInterval(pollInterval)
+                            pollInterval = null
+                            console.log('[Realtime] 🛑 Disabled polling - realtime is working')
+                        }
+                    } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                        console.warn('[Realtime] ⚠️ Connection lost, enabling slow polling fallback')
+                        startPolling()
+                    }
+                })
+        } catch (error) {
+            console.error('[Realtime] ❌ Error setting up subscription:', error)
+            startPolling()
+        }
+        
+        // Start polling immediately in case realtime isn't enabled
+        startPolling()
+        
+        // Cleanup on unmount
+        return () => {
+            console.log('[Realtime] Cleaning up')
+            if (channel) {
+                supabase.removeChannel(channel)
+            }
+            if (pollInterval) {
+                clearInterval(pollInterval)
+            }
+        }
+    }, [playlist.id])
     
     const activeTracks = playlistTracks.filter(t => t.status === 'active')
     const inactiveTracks = playlistTracks.filter(t => t.status !== 'active')
