@@ -64,7 +64,7 @@ export function SuggestionsFilter({
               />
             </svg>
           </div>
-          <span className="text-xs text-white/70">Removed</span>
+          <span className="text-xs text-white/70">Show Removed</span>
         </label>
       </div>
     </div>

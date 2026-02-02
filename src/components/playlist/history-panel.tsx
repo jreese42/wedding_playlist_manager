@@ -10,6 +10,7 @@ type Track = Database['public']['Tables']['tracks']['Row']
 interface HistoryPanelProps {
     track: Track | null
     onClose: () => void
+    onPinComment?: (trackId: string, comment: string | null) => void
 }
 
 type HistoryItem = {
@@ -23,17 +24,19 @@ type HistoryItem = {
     } | null
 }
 
-export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
+export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps) {
     const [history, setHistory] = useState<HistoryItem[]>([])
     const [loading, setLoading] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
     const [currentTrack, setCurrentTrack] = useState<Track | null>(null)
+    const [pinnedComment, setPinnedComment] = useState<string | null>(null)
     const [isPending, startTransition] = useTransition()
 
-    const fetchHistory = () => {
-        if (!currentTrack) return;
+    const fetchHistory = (trackId?: string) => {
+        const id = trackId || currentTrack?.id
+        if (!id) return;
         setLoading(true)
-        getTrackHistory(currentTrack.id)
+        getTrackHistory(id)
             .then((data: any) => {
                 setHistory(data)
             })
@@ -44,25 +47,29 @@ export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
     useEffect(() => {
         if (track) {
             setCurrentTrack(track)
+            setPinnedComment(track.pinned_comment || null)
             
             setTimeout(() => {
                 setIsOpen(true)
             }, 10)
 
-            fetchHistory()
+            fetchHistory(track.id)
         } else {
             setIsOpen(false)
         }
-    }, [track, currentTrack])
+    }, [track])
 
     const handlePin = (comment: string | null) => {
         if (!currentTrack) return;
 
+        // Update state IMMEDIATELY for instant UI feedback - this MUST happen synchronously
+        setPinnedComment(comment)
+        setCurrentTrack({ ...currentTrack, pinned_comment: comment })
+        onPinComment?.(currentTrack.id, comment)
+
+        // Then persist to server
         startTransition(async () => {
             await pinComment(currentTrack.id, comment)
-            if (currentTrack) {
-                setCurrentTrack({ ...currentTrack, pinned_comment: comment })
-            }
         })
     }
     
@@ -132,10 +139,10 @@ export function HistoryPanel({ track, onClose }: HistoryPanelProps) {
                                         </div>
                                         {item.action === 'comment' && (
                                             <button 
-                                                onClick={() => handlePin(item.details.comment === currentTrack.pinned_comment ? null : item.details.comment)}
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-zinc-500 hover:text-indigo-400"
+                                                onClick={() => handlePin(item.details.comment === pinnedComment ? null : item.details.comment)}
+                                                className="text-zinc-500 hover:text-indigo-400 transition-colors md:opacity-0 md:group-hover:opacity-100"
                                             >
-                                                <Pin className={`w-3.5 h-3.5 ${item.details.comment === currentTrack.pinned_comment ? 'fill-indigo-400' : ''}`} />
+                                                <Pin className={`w-3.5 h-3.5 ${item.details.comment === pinnedComment ? 'fill-indigo-400' : ''}`} />
                                             </button>
                                         )}
                                     </div>

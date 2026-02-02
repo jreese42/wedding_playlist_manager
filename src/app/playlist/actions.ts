@@ -83,8 +83,15 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
         .single()
 
     // 1. Update the track
+    const updateData: any = { status }
+    
+    // If moving to active, set added_by
+    if (status === 'active') {
+        updateData.added_by = user.id
+    }
+    
     const { error } = await supabase.from('tracks')
-        .update({ status })
+        .update(updateData)
         .eq('id', trackId)
 
     if (error) throw new Error(error.message)
@@ -198,7 +205,8 @@ export async function pinComment(trackId: string, comment: string | null) {
         throw new Error(error.message)
     }
 
-    revalidatePath('/playlist/[slug]', 'layout')
+    // Don't revalidate layout - client side state already updated
+    // Just update the cache tag for this specific track if needed elsewhere
 }
 
 export async function searchSpotify(query: string) {
@@ -236,7 +244,8 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         duration_ms: track.duration_ms,
         status: status,
         position: status === 'active' ? position : null,
-        added_by: user.id
+        added_by: status === 'active' ? user.id : null,
+        suggested_by: status === 'suggested' ? user.id : null
     }).select().single()
 
     if (error) {
@@ -271,6 +280,8 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
     }
 
     revalidatePath('/playlist/[slug]', 'layout')
+    
+    return insertedTrack
 }
 
 export async function deleteTrack(trackId: string) {

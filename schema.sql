@@ -68,6 +68,7 @@ create table tracks (
   position integer, -- for ordering within the playlist
   pinned_comment text,
   added_by uuid references auth.users(id),
+  suggested_by text, -- user_id OR 'ai-assistant' for AI-generated suggestions
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

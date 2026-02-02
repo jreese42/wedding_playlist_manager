@@ -63,32 +63,37 @@ async function getPlaylist(slug: string) {
         return { playlist, tracks: [] }
     }
 
-    // 3. Fetch profile data for all tracks
+    // 3. Fetch profile data for all tracks - for both added_by and suggested_by
     let enrichedTracks: Track[] = []
     if (allTracks && allTracks.length > 0) {
+        // Collect all user IDs from both added_by and suggested_by (which may contain user IDs or 'ai-assistant')
         const userIds = allTracks
-            .map((t: any) => t.added_by)
-            .filter((id: any) => id !== null && id !== undefined)
+            .flatMap((t: any) => {
+                const ids = []
+                // Only user UUIDs are fetchable, not the string 'ai-assistant'
+                if (t.added_by && t.added_by !== 'ai-assistant') ids.push(t.added_by)
+                if (t.suggested_by && t.suggested_by !== 'ai-assistant') ids.push(t.suggested_by)
+                return ids
+            })
             .filter((v: any, i: any, a: any) => a.indexOf(v) === i) // deduplicate
         
+        let profileMap = new Map()
         if (userIds.length > 0) {
             const { data: profiles } = await supabase
                 .from('profiles')
                 .select('id, display_name, avatar_color')
                 .in('id', userIds)
             
-            const profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
-            enrichedTracks = allTracks.map((track: any) => ({
-                ...track,
-                profiles: track.added_by ? profileMap.get(track.added_by) : null
-            }))
-        } else {
-            // No user IDs to fetch, but still need to add null profiles
-            enrichedTracks = allTracks.map((track: any) => ({
-                ...track,
-                profiles: null
-            }))
+            profileMap = new Map(profiles?.map((p: any) => [p.id, p]) || [])
         }
+        
+        // Enrich tracks with profiles - use added_by for active tracks, suggested_by for suggestions
+        enrichedTracks = allTracks.map((track: any) => ({
+            ...track,
+            profiles: track.added_by ? profileMap.get(track.added_by) : null
+        }))
+    } else {
+        enrichedTracks = allTracks || []
     }
     
     return { playlist, tracks: enrichedTracks }

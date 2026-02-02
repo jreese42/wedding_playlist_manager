@@ -8,9 +8,11 @@ interface SpotifySearchProps {
     playlistId: string
     status: 'active' | 'suggested'
     placeholder?: string
+    className?: string
+    onTrackAdded?: (track: any) => void
 }
 
-export function SpotifySearch({ playlistId, status, placeholder }: SpotifySearchProps) {
+export function SpotifySearch({ playlistId, status, placeholder, className, onTrackAdded }: SpotifySearchProps) {
     const [query, setQuery] = useState('')
     const [results, setResults] = useState<any[]>([])
     const [isSearching, setIsSearching] = useState(false)
@@ -66,10 +68,14 @@ export function SpotifySearch({ playlistId, status, placeholder }: SpotifySearch
     const handleSelect = (track: any) => {
         startTransition(async () => {
             try {
-                await addTrack(playlistId, track, status)
+                const addedTrack = await addTrack(playlistId, track, status)
                 setQuery('')
                 setResults([])
                 setIsOpen(false)
+                // Notify parent of the new track with the database record
+                if (onTrackAdded && addedTrack) {
+                    onTrackAdded(addedTrack)
+                }
             } catch (e) {
                 console.error('Failed to add track', e)
                 alert('Failed to add track')
@@ -78,7 +84,7 @@ export function SpotifySearch({ playlistId, status, placeholder }: SpotifySearch
     }
 
     return (
-        <div ref={containerRef} className="relative mb-4 md:mb-6 w-full md:max-w-xl mx-auto">
+        <div ref={containerRef} className={className || "relative mb-4 md:mb-6 w-full md:max-w-xl mx-auto"}>
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                 <input

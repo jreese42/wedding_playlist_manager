@@ -93,6 +93,7 @@ export type Database = {
           position: number | null
           pinned_comment: string | null
           added_by: string | null
+          suggested_by: string | null
           created_at: string
         }
         Insert: {
@@ -129,6 +130,7 @@ export type Database = {
           position?: number | null
           pinned_comment?: string | null
           added_by?: string | null
+          suggested_by?: string | null
           created_at?: string
         }
         Relationships: [

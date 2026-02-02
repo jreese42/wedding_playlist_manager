@@ -15,9 +15,11 @@ interface TrackListProps {
     playlistId: string
     playlistSpotifyId: string | null
     onSelectTrack: (trackId: string) => void
+    onStatusChange?: (trackId: string, newStatus: 'active' | 'suggested' | 'rejected') => void
+    onTrackDeleted?: (trackId: string) => void
 }
 
-export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSelectTrack }: TrackListProps) {
+export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSelectTrack, onStatusChange, onTrackDeleted }: TrackListProps) {
     // We need to ensure we only render DnD on the client to avoid hydration mismatch
     const [enabled, setEnabled] = useState(false)
     const [tracks, setTracks] = useState(initialTracks)
@@ -73,6 +75,8 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
                         index={i} 
                         playlistSpotifyId={playlistSpotifyId}
                         onClick={() => onSelectTrack(track.id)}
+                        onStatusChange={onStatusChange}
+                        onTrackDeleted={onTrackDeleted}
                     />
                 ))}
             </div>
@@ -96,6 +100,8 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
                                         index={index}
                                         playlistSpotifyId={playlistSpotifyId}
                                         onClick={() => onSelectTrack(track.id)}
+                                        onStatusChange={onStatusChange}
+                                        onTrackDeleted={onTrackDeleted}
                                         innerRef={provided.innerRef}
                                         draggableProps={provided.draggableProps}
                                         dragHandleProps={provided.dragHandleProps}

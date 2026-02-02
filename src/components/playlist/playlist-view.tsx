@@ -2,13 +2,14 @@
 
 import { useState } from 'react'
 import { Database } from '@/lib/database.types'
-import { Clock, Music, Play } from 'lucide-react'
+import { Clock, Music, Play, Sparkles } from 'lucide-react'
 import { TrackList } from '@/components/playlist/track-list'
 import { TrackRow } from '@/components/playlist/track-row'
 import { HistoryPanel } from '@/components/playlist/history-panel'
 import { SpotifySearch } from '@/components/playlist/spotify-search'
 import { SyncStatus } from '@/components/playlist/sync-status'
 import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
+import { AIAssistantModal } from '@/components/ai-assistant-modal'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row'] & {
@@ -25,9 +26,11 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const [selectedTrack, setSelectedTrack] = useState<Track | null>(null)
     const [filterText, setFilterText] = useState('')
     const [showRemoved, setShowRemoved] = useState(false)
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false)
+    const [playlistTracks, setPlaylistTracks] = useState(tracks)
     
-    const activeTracks = tracks.filter(t => t.status === 'active')
-    const inactiveTracks = tracks.filter(t => t.status !== 'active')
+    const activeTracks = playlistTracks.filter(t => t.status === 'active')
+    const inactiveTracks = playlistTracks.filter(t => t.status !== 'active')
     
     // Filter logic for suggestions
     const suggestedTracks = inactiveTracks.filter(t => 
@@ -49,11 +52,39 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const hours = Math.floor(totalDurationMs / 3600000)
     const minutes = Math.floor((totalDurationMs % 3600000) / 60000)
 
+    const handleStatusChange = (trackId: string, newStatus: 'active' | 'suggested' | 'rejected') => {
+        // Update track status in state
+        setPlaylistTracks(prev => prev.map(t => 
+            t.id === trackId ? { ...t, status: newStatus } : t
+        ))
+    }
+
+    const handleTrackDeleted = (trackId: string) => {
+        // Remove track from state
+        setPlaylistTracks(prev => prev.filter(t => t.id !== trackId))
+    }
+
+    const handleTrackAdded = (track: any) => {
+        // Add new track to state
+        setPlaylistTracks(prev => [...prev, {
+            ...track,
+            profiles: null
+        } as Track])
+    }
+
+    const handlePinComment = (trackId: string, comment: string | null) => {
+        // Update track's pinned_comment in state
+        setPlaylistTracks(prev => prev.map(t =>
+            t.id === trackId ? { ...t, pinned_comment: comment } : t
+        ))
+    }
+
     return (
         <div className="bg-gradient-to-b from-indigo-950/80 to-zinc-950 min-h-full pb-8">
             <HistoryPanel 
                 track={selectedTrack} 
-                onClose={() => setSelectedTrack(null)} 
+                onClose={() => setSelectedTrack(null)}
+                onPinComment={handlePinComment}
             />
 
             {/* Header */}
@@ -68,7 +99,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-zinc-300 font-medium">
                             <span className="text-white">{playlist.vibe}</span>
                             <span>•</span>
-                            <span>{tracks.length} songs, {hours} hr {minutes} min</span>
+                            <span>{playlistTracks.length} songs, {hours} hr {minutes} min</span>
                         </div>
                         {playlist.spotify_id && (
                             <a
@@ -112,7 +143,9 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         initialTracks={activeTracks} 
                         playlistId={playlist.id} 
                         playlistSpotifyId={playlist.spotify_id} 
-                        onSelectTrack={(trackId) => setSelectedTrack(tracks.find(t => t.id === trackId) || null)}
+                        onSelectTrack={(trackId) => setSelectedTrack(playlistTracks.find(t => t.id === trackId) || null)}
+                        onStatusChange={handleStatusChange}
+                        onTrackDeleted={handleTrackDeleted}
                     />
 
                     <div className="mt-4" data-tour="add-songs-bar">
@@ -120,6 +153,8 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                             playlistId={playlist.id} 
                             status="active" 
                             placeholder="Add a song to this playlist..."
+                            className="relative mb-4 md:mb-6 w-full md:max-w-xl mx-auto"
+                            onTrackAdded={handleTrackAdded}
                         />
                     </div>
 
@@ -133,7 +168,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     <div className="mt-12" data-tour="suggested-section">
                         <h2 className="text-xl font-bold text-white mb-4 px-4">Suggestions & Removed</h2>
                         
-                        {inactiveTracks.length > 0 ? (
+                        {inactiveTracks.length > 0 && (
                             <>
                                 <SuggestionsFilter
                                     filterText={filterText}
@@ -144,7 +179,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                     totalRemoved={removedCount}
                                 />
                                 
-                                {filteredSuggestions.length > 0 ? (
+                        {filteredSuggestions.length > 0 ? (
                                     <div className="space-y-1 opacity-60 hover:opacity-100 transition-opacity">
                                         {filteredSuggestions.map((track, i) => (
                                             <TrackRow 
@@ -155,6 +190,8 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                                 playlistSpotifyId={playlist.spotify_id}
                                                 onClick={() => setSelectedTrack(track)}
                                                 isAdmin={isAdmin}
+                                                onStatusChange={handleStatusChange}
+                                                onTrackDeleted={handleTrackDeleted}
                                             />
                                         ))}
                                     </div>
@@ -163,23 +200,51 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                         {filterText ? 'No suggestions match your search.' : 'No suggestions yet.'}
                                     </div>
                                 )}
-
-                                <div className="px-4 mt-4">
-                                    <SpotifySearch 
-                                        playlistId={playlist.id} 
-                                        status="suggested" 
-                                        placeholder="Suggest a song..."
-                                    />
-                                </div>
                             </>
-                        ) : (
-                            <div className="text-center py-12 text-zinc-500 px-4">
-                                Nothing here!
+                        )}
+
+                        {inactiveTracks.length === 0 && (
+                            <div className="text-center py-6 text-zinc-500 px-4">
+                                No suggestions yet. Use the tools below to add some!
                             </div>
                         )}
+
+                        <div className="px-4 mt-4">
+                            <div className="flex flex-col sm:flex-row gap-2 w-full md:max-w-xl mx-auto">
+                                <SpotifySearch 
+                                    playlistId={playlist.id} 
+                                    status="suggested" 
+                                    placeholder="Suggest a song..."
+                                    className="relative flex-1"
+                                    onTrackAdded={handleTrackAdded}
+                                />
+                                <button
+                                    onClick={() => setIsAIModalOpen(true)}
+                                    className="flex-shrink-0 flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-sm font-medium rounded transition-all transform hover:scale-105"
+                                >
+                                    <Sparkles className="w-4 h-4" />
+                                    <span>AI Assistant</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* AI Assistant Modal */}
+            <AIAssistantModal
+                isOpen={isAIModalOpen}
+                onClose={() => setIsAIModalOpen(false)}
+                playlist={playlist}
+                existingTracks={playlistTracks}
+                onSongsAdded={(newSongs) => {
+                    const songsWithProfiles = newSongs.map(song => ({
+                        ...song,
+                        profiles: null,
+                    })) as Track[]
+                    setPlaylistTracks(prev => [...prev, ...songsWithProfiles])
+                }}
+            />
         </div>
     )
 }
