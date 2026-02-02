@@ -275,7 +275,7 @@ function FormatDetails({ action, details }: { action: string, details: any }) {
 
     if (action === 'comment') {
         return (
-            <div className="bg-zinc-800 p-2 rounded-md text-zinc-300">
+            <div className="bg-zinc-800 p-2 rounded-md text-zinc-300 break-words whitespace-pre-wrap">
                 {details.comment}
             </div>
         )

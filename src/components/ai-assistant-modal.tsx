@@ -57,8 +57,18 @@ export function AIAssistantModal({
   const [selectedSongs, setSelectedSongs] = useState<Set<string>>(new Set())
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const latestAIResponseRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const thinkingPhrases = ['Thinking...', 'Pondering...', 'Searching...', 'Planning...', 'Plotting...']
+
+  // Auto-focus input when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [isOpen])
 
   // Cycle through thinking phrases while loading
   useEffect(() => {
@@ -354,6 +364,7 @@ export function AIAssistantModal({
         <form onSubmit={handleSendMessage} className="p-4 border-t border-white/10">
           <div className="flex gap-2">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
