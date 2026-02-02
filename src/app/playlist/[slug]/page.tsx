@@ -1,6 +1,6 @@
 import { Database } from '@/lib/database.types'
 import { createClient } from '@/lib/supabase/server'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { PlaylistView } from '@/components/playlist/playlist-view'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 
@@ -104,6 +104,14 @@ async function getPlaylist(slug: string) {
 }
 
 export default async function PlaylistPage({ params }: { params: Promise<{ slug: string }> }) {
+    // Check if user is authenticated
+    const supabase = await createClient()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
+    if (!user || authError) {
+        // Redirect unauthenticated users to login
+        redirect('/login')
+    }
+    
     const { slug } = await params
     const data = await getPlaylist(slug)
     const isAdmin = await checkIfAdmin()

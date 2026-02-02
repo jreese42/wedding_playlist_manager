@@ -2,17 +2,31 @@ import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PlaylistCard } from '@/components/home/playlist-card'
-import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 
 // Simple slugify function
 const slugify = (text: string) => {
   return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
 }
 
-export const revalidate = 0 // Disable caching for homepage
+// Prevent caching - always revalidate and don't cache
+export const revalidate = 0
+export const dynamic = 'force-dynamic'
 
 export default async function Home() {
   const supabase = await createClient()
+  
+  // Check if user is authenticated
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  console.log('[Home] Auth check - User:', user?.email, 'Error:', authError)
+  
+  if (!user || authError) {
+    // Redirect unauthenticated users to login
+    console.log('[Home] Redirecting to login - no user')
+    redirect('/login')
+  }
+  
   const adminSupabase = createAdminClient()
   
   // Fetch app settings using admin client (has access to app_settings table)

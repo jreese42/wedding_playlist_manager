@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { Home, Music, Settings, LogOut, LogIn, Edit2 } from 'lucide-react'
 import { useMobileMenu } from '@/lib/mobile-menu-context'
 import { getMobileSidebarData } from './mobile-sidebar-actions'
+import { logout } from '@/app/login/actions'
 
 interface Playlist {
   id: string
@@ -37,10 +38,8 @@ export function MobileSidebar() {
   }, [])
 
   const handleLogout = async () => {
-    const { createClient } = await import('@/lib/supabase/client')
-    const supabase = createClient()
-    await supabase.auth.signOut()
     setIsOpen(false)
+    await logout()
   }
 
   return (
