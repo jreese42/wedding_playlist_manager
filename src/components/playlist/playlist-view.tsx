@@ -192,7 +192,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     {playlist.title.charAt(0)}
                 </div>
                 <div className="flex flex-col gap-3 flex-1 w-full md:w-auto">
-                    <span className="text-xs font-bold uppercase tracking-wider text-white">Playlist</span>
                     <h1 className="text-3xl md:text-7xl font-black text-white tracking-tight break-words">{playlist.title}</h1>
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-zinc-300 font-medium">
