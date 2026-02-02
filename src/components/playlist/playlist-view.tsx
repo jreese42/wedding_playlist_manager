@@ -33,7 +33,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     // Setup real-time subscription for track changes
     useEffect(() => {
         const supabase = createClient()
-        console.log('[Realtime] Setting up subscription for playlist:', playlist.id)
         
         let channel: any
         let pollInterval: NodeJS.Timeout | null = null
@@ -41,7 +40,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
         // Start polling as fallback
         const startPolling = () => {
             if (pollInterval) return // Already running
-            console.log('[Polling] 🔄 Starting slow polling fallback (30 second interval)')
             
             pollInterval = setInterval(async () => {
                 try {
@@ -49,6 +47,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         .from('tracks')
                         .select('*')
                         .eq('playlist_id', playlist.id)
+                        .order('position', { ascending: true })
                     
                     if (data) {
                         // Only update if something changed
@@ -56,12 +55,11 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         const prevStr = JSON.stringify(playlistTracks.sort((a, b) => a.id.localeCompare(b.id)))
                         
                         if (dataStr !== prevStr) {
-                            console.log('[Polling] 📡 Detected changes via polling')
                             setPlaylistTracks(data as Track[])
                         }
                     }
                 } catch (error) {
-                    console.error('[Polling] ❌ Error polling for updates:', error)
+                    // Silently handle polling errors
                 }
             }, 30000) // Poll every 30 seconds
         }
@@ -78,55 +76,49 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         filter: `playlist_id=eq.${playlist.id}`
                     },
                     (payload) => {
-                        console.log('[Realtime] Received payload:', payload)
-                        
                         // Handle INSERT event
                         if (payload.eventType === 'INSERT') {
-                            console.log('[Realtime] INSERT event for track:', payload.new)
                             const newTrack = payload.new as Track
                             setPlaylistTracks(prev => {
                                 // Check if track already exists (avoid duplicates)
                                 if (prev.some(t => t.id === newTrack.id)) {
-                                    console.log('[Realtime] Track already exists, skipping')
                                     return prev
                                 }
-                                console.log('[Realtime] Adding new track to state')
-                                return [...prev, newTrack]
+                                // Add and sort by position
+                                return [...prev, newTrack].sort((a, b) => (a.position || 0) - (b.position || 0))
                             })
                         }
                         // Handle UPDATE event
                         else if (payload.eventType === 'UPDATE') {
-                            console.log('[Realtime] UPDATE event for track:', payload.new)
                             const updatedTrack = payload.new as Track
-                            setPlaylistTracks(prev => prev.map(t => 
-                                t.id === updatedTrack.id ? updatedTrack : t
-                            ))
+                            setPlaylistTracks(prev => {
+                                // Update the track and sort by position (important for drag-and-drop)
+                                const updated = prev.map(t => 
+                                    t.id === updatedTrack.id ? updatedTrack : t
+                                )
+                                return updated.sort((a, b) => (a.position || 0) - (b.position || 0))
+                            })
                         }
                         // Handle DELETE event
                         else if (payload.eventType === 'DELETE') {
-                            console.log('[Realtime] DELETE event for track:', payload.old)
                             const deletedTrack = payload.old as Track
                             setPlaylistTracks(prev => prev.filter(t => t.id !== deletedTrack.id))
                         }
                     }
                 )
                 .subscribe((status) => {
-                    console.log('[Realtime] Subscription status:', status)
                     if (status === 'SUBSCRIBED') {
-                        console.log('[Realtime] ✅ Successfully subscribed to changes')
                         // Disable polling if realtime connected
                         if (pollInterval) {
                             clearInterval(pollInterval)
                             pollInterval = null
-                            console.log('[Realtime] 🛑 Disabled polling - realtime is working')
                         }
                     } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                        console.warn('[Realtime] ⚠️ Connection lost, enabling slow polling fallback')
                         startPolling()
                     }
                 })
         } catch (error) {
-            console.error('[Realtime] ❌ Error setting up subscription:', error)
+            // Fallback to polling on error
             startPolling()
         }
         
@@ -135,7 +127,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
         
         // Cleanup on unmount
         return () => {
-            console.log('[Realtime] Cleaning up')
             if (channel) {
                 supabase.removeChannel(channel)
             }

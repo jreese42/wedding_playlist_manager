@@ -152,8 +152,6 @@ export function AIAssistantModal({
       }
       setMessages(prev => [...prev, assistantMessage])
     } catch (error) {
-      console.error('Error getting AI suggestions:', error)
-      
       let errorContent = 'Sorry, I encountered an error. Please try again.'
       
       if (error instanceof Error) {
@@ -242,7 +240,6 @@ export function AIAssistantModal({
       }
       setMessages(prev => [...prev, confirmMessage])
     } catch (error) {
-      console.error('Error adding songs:', error)
       const errorMessage: ChatMessage = {
         id: Date.now().toString(),
         role: 'assistant',

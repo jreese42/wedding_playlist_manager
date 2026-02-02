@@ -39,15 +39,12 @@ export function TourTrigger() {
         if (isOnPlaylist) {
           // We're already on a playlist, start tour immediately
           const timer = setTimeout(() => {
-            console.log('Starting welcome tour...')
             startTour(WELCOME_TOUR_STEPS)
           }, 500)
           return () => clearTimeout(timer)
         } else {
           // Navigate to first playlist and start tour after navigation
           const timer = setTimeout(() => {
-            console.log('Navigating to first playlist to start tour...')
-            
             // Get first playlist link from DOM
             const firstPlaylistLink = document.querySelector('[data-tour="navigation"] a[href*="/playlist/"]') as HTMLAnchorElement
             if (firstPlaylistLink) {
@@ -59,7 +56,6 @@ export function TourTrigger() {
               }
             } else {
               // No playlist found, just start tour on home
-              console.log('No playlist found, starting tour on home...')
               startTour(WELCOME_TOUR_STEPS)
             }
           }, 500)
@@ -73,7 +69,6 @@ export function TourTrigger() {
         if (shouldStart === 'true') {
           sessionStorage.removeItem('tour_start_after_navigation')
           const timer = setTimeout(() => {
-            console.log('Starting tour after navigation...')
             startTour(WELCOME_TOUR_STEPS)
           }, 1000)
           return () => clearTimeout(timer)

@@ -53,7 +53,6 @@ function Rating({ trackId, rating: initialRating }: { trackId: string, rating: n
                         try {
                            await updateRating(trackId, star)
                         } catch (error) {
-                           console.error('Rating failed', error)
                            setRating(prevRating) // Revert
                         }
                     }}
@@ -83,15 +82,16 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
   const albumSpotifyUrl = track.album_spotify_uri ? `https://open.spotify.com/album/${track.album_spotify_uri.split(':').pop()}` : '#'
 
   return (
-    <>
+    <div 
+      ref={innerRef}
+      {...draggableProps}
+      style={draggableProps?.style}
+    >
       {/* Desktop View */}
       <div 
-          ref={innerRef}
-          {...draggableProps}
           {...dragHandleProps}
           onClick={onClick}
           className={`group hidden md:grid grid-cols-[16px_4fr_2fr_140px_minmax(60px,1fr)] gap-4 px-4 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md items-center transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
-          style={draggableProps?.style}
           data-tour={isMainList ? "track-row" : undefined}
       >
         <div className="flex justify-center items-center w-4 text-right tabular-nums">
@@ -247,12 +247,9 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
 
       {/* Mobile View */}
       <div 
-        ref={innerRef}
-        {...draggableProps}
         {...dragHandleProps}
         onClick={onClick}
         className={`md:hidden group flex flex-row gap-2 px-2 py-2 text-sm text-zinc-300 hover:bg-white/10 rounded-md transition-colors cursor-pointer ${isDragging ? 'bg-white/20 shadow-lg' : ''} ${!isMainList ? 'opacity-70 hover:opacity-100' : ''}`}
-        style={draggableProps?.style}
       >
         {/* Album Artwork - spans height */}
         <div className="flex-shrink-0">
@@ -413,7 +410,7 @@ export function TrackRow({ track, index, dragHandleProps, draggableProps, innerR
           )}
         </div>
       )}
-    </>
+    </div>
   )
 }
 

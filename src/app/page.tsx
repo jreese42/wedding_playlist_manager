@@ -19,11 +19,9 @@ export default async function Home() {
   
   // Check if user is authenticated
   const { data: { user }, error: authError } = await supabase.auth.getUser()
-  console.log('[Home] Auth check - User:', user?.email, 'Error:', authError)
   
   if (!user || authError) {
     // Redirect unauthenticated users to login
-    console.log('[Home] Redirecting to login - no user')
     redirect('/login')
   }
   

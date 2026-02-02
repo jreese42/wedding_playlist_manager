@@ -52,7 +52,7 @@ export function SpotifySearch({ playlistId, status, placeholder, className, onTr
                     const tracks = await searchSpotify(query)
                     setResults(tracks)
                 } catch (e) {
-                    console.error('Search failed', e)
+                    // Search failed silently
                 } finally {
                     setIsSearching(false)
                 }
@@ -78,7 +78,6 @@ export function SpotifySearch({ playlistId, status, placeholder, className, onTr
                     onTrackAdded(addedTrack)
                 }
             } catch (e) {
-                console.error('Failed to add track', e)
                 alert('Failed to add track')
             }
         })

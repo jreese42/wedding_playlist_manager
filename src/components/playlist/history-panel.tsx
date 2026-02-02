@@ -44,7 +44,6 @@ export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps
                 setError(null)
             })
             .catch((err) => {
-                console.error('Failed to fetch history:', err)
                 setError('Failed to load activity history')
                 setHistory([])
             })
@@ -82,7 +81,6 @@ export function HistoryPanel({ track, onClose, onPinComment }: HistoryPanelProps
             try {
                 await pinComment(currentTrack.id, comment)
             } catch (err) {
-                console.error('Failed to pin comment:', err)
                 // Rollback on error
                 setPinnedComment(previousComment)
                 setCurrentTrack(prev => prev ? { ...prev, pinned_comment: previousComment } : null)
@@ -190,7 +188,6 @@ function CommentForm({ trackId, onCommentAdded }: { trackId: string, onCommentAd
                 setComment('')
                 onCommentAdded()
             } catch (error) {
-                console.error('Failed to add comment', error)
                 alert('Could not post comment.')
             }
         })

@@ -58,7 +58,6 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
         try {
             await moveTrack(playlistId, trackId, newPosition, oldPosition)
         } catch (e) {
-            console.error('Failed to move track', e)
             // Revert on error
             setTracks(tracks) 
             alert('Failed to save order. Check console.')

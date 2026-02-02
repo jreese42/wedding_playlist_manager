@@ -28,7 +28,7 @@ export function MobileSidebar() {
         setPlaylists(data.playlists)
         setIsAdmin(data.isAdmin)
       } catch (error) {
-        console.error('Error fetching mobile sidebar data:', error)
+        // Handle silently
       } finally {
         setIsLoading(false)
       }
