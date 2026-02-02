@@ -6,9 +6,9 @@ import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 
 export async function getAppSettings() {
-    const supabase = await createClient()
+    const adminSupabase = createAdminClient()
 
-    const { data: settings, error } = await supabase
+    const { data: settings, error } = await (adminSupabase as any)
         .from('app_settings')
         .select('key, value, description')
         .order('key', { ascending: true })

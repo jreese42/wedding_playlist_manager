@@ -127,7 +127,7 @@ Phase 7: Project Reusability Readiness
 
 [ ] Licenses page - if needed, include a link on the page to load a modal showing license information.
 
-[ ] About Page and README salesmanship - explain what this tool does and why you would use it instead of shared spotify playlists. Include some setup info in the README about how you should set it up in with db and vercel, then set up some public spotify playlists and connect them.
+[x] About Page and README salesmanship - explain what this tool does and why you would use it instead of shared spotify playlists. Include some setup info in the README about how you should set it up in with db and vercel, then set up some public spotify playlists and connect them.
 
 📱 Mobile UX Specifics
 

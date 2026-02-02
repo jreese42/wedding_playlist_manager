@@ -93,7 +93,11 @@ async function getPlaylist(slug: string) {
             profiles: track.added_by ? profileMap.get(track.added_by) : null
         }))
     } else {
-        enrichedTracks = allTracks || []
+        // If no tracks, still need to match the enriched structure
+        enrichedTracks = (allTracks || []).map((track: any) => ({
+            ...track,
+            profiles: null
+        }))
     }
     
     return { playlist, tracks: enrichedTracks }
