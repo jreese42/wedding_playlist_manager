@@ -6,7 +6,7 @@ import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 
 export async function getAppSettings() {
-    const adminSupabase = createAdminClient()
+    const adminSupabase = await createAdminClient()
 
     const { data: settings, error } = await (adminSupabase as any)
         .from('app_settings')
@@ -26,7 +26,7 @@ export async function updateAppSettings(updates: Array<{ key: string; value: str
     if (!isAdmin) throw new Error('Unauthorized')
 
     // Use admin client to bypass RLS for both update and verification
-    const adminSupabase = createAdminClient()
+    const adminSupabase = await createAdminClient()
 
     for (const { key, value } of updates) {
         const { error } = await (adminSupabase as any)

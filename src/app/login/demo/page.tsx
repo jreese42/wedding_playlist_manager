@@ -1,21 +1,20 @@
 'use client'
 
 import { useActionState } from 'react'
-import { login } from './actions'
-import { enableDemoMode } from '@/app/demo/actions'
+import { login } from '@/app/login/actions'
 
 const initialState = {
   error: '',
 }
 
-export default function LoginPage() {
+export default function DemoLoginPage() {
   const [state, formAction] = useActionState(login, initialState)
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 p-4 text-white">
       <div className="w-full max-w-sm space-y-8">
         <div className="text-center">
-          <h1 className="text-2xl font-bold tracking-tight">Sign in to your account</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Demo Admin Sign In</h1>
           <p className="mt-2 text-sm text-zinc-400">
             Enter your credentials to access the wedding playlists
           </p>
@@ -68,17 +67,6 @@ export default function LoginPage() {
             </button>
           </div>
         </form>
-
-        <div className="text-center mt-8">
-          <form action={enableDemoMode}>
-              <button
-                type="submit"
-                className="text-sm text-zinc-500 hover:text-zinc-300 hover:underline transition-colors"
-              >
-                Or, try a live demo
-              </button>
-          </form>
-        </div>
       </div>
     </div>
   )

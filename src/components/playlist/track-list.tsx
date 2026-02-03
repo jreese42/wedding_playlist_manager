@@ -11,30 +11,23 @@ type Track = Database['public']['Tables']['tracks']['Row'] & {
 }
 
 interface TrackListProps {
-    initialTracks: Track[]
+    tracks: Track[]
     playlistId: string
     playlistSpotifyId: string | null
     onSelectTrack: (trackId: string) => void
-    onStatusChange?: (trackId: string, newStatus: 'active' | 'suggested' | 'rejected') => void
-    onTrackDeleted?: (trackId: string) => void
 }
 
-export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSelectTrack, onStatusChange, onTrackDeleted }: TrackListProps) {
-    // We need to ensure we only render DnD on the client to avoid hydration mismatch
-    const [enabled, setEnabled] = useState(false)
-    const [tracks, setTracks] = useState(initialTracks)
+export function TrackList({ tracks, playlistId, playlistSpotifyId, onSelectTrack }: TrackListProps) {
+    const [isClient, setIsClient] = useState(false)
+    const [localTracks, setLocalTracks] = useState(tracks)
 
     useEffect(() => {
-        const animation = requestAnimationFrame(() => setEnabled(true))
-        return () => {
-            cancelAnimationFrame(animation)
-            setEnabled(false)
-        }
+        setIsClient(true)
     }, [])
-    
+
     useEffect(() => {
-        setTracks(initialTracks)
-    }, [initialTracks])
+        setLocalTracks(tracks)
+    }, [tracks])
 
     async function onDragEnd(result: DropResult) {
         if (!result.destination) return
@@ -44,27 +37,35 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
 
         if (sourceIndex === destinationIndex) return
 
-        // Optimistic Update
-        const newTracks = Array.from(tracks)
-        const [movedTrack] = newTracks.splice(sourceIndex, 1)
-        newTracks.splice(destinationIndex, 0, movedTrack)
+        const movedTrack = localTracks[sourceIndex]
+        const targetTrack = localTracks[destinationIndex]
         
-        setTracks(newTracks)
+        if (!movedTrack || !targetTrack) return
 
+        // 1. Optimistic Update: Reorder the list locally immediately
+        const newTracks = Array.from(localTracks)
+        const [removed] = newTracks.splice(sourceIndex, 1)
+        newTracks.splice(destinationIndex, 0, removed)
+        setLocalTracks(newTracks)
+
+        // 2. Server Update: Use DB positions to handle gaps correctly
         const trackId = movedTrack.id
-        const oldPosition = sourceIndex + 1 // Assuming 1-based
-        const newPosition = destinationIndex + 1
+        // Use actual DB positions. Fallback to index logic only if null.
+        const oldPosition = movedTrack.position ?? (sourceIndex + 1)
+        const newPosition = targetTrack.position ?? (destinationIndex + 1)
         
         try {
             await moveTrack(playlistId, trackId, newPosition, oldPosition)
         } catch (e) {
-            // Revert on error
-            setTracks(tracks) 
-            alert('Failed to save order. Check console.')
+            console.error('Failed to reorder track:', e)
+            // Revert optimistic update on error
+            setLocalTracks(tracks)
+            alert('An error occurred while reordering the track.')
         }
     }
 
-    if (!enabled) {
+    // Render a static list for SSR and initial client render to prevent hydration errors.
+    if (!isClient) {
         return (
             <div className="space-y-1">
                 {tracks.map((track, i) => (
@@ -74,8 +75,6 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
                         index={i} 
                         playlistSpotifyId={playlistSpotifyId}
                         onClick={() => onSelectTrack(track.id)}
-                        onStatusChange={onStatusChange}
-                        onTrackDeleted={onTrackDeleted}
                     />
                 ))}
             </div>
@@ -91,7 +90,7 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
                         ref={provided.innerRef}
                         className="space-y-1"
                     >
-                        {tracks.map((track, index) => (
+                        {localTracks.map((track, index) => (
                             <Draggable key={track.id} draggableId={track.id} index={index}>
                                 {(provided, snapshot) => (
                                     <TrackRow
@@ -99,8 +98,6 @@ export function TrackList({ initialTracks, playlistId, playlistSpotifyId, onSele
                                         index={index}
                                         playlistSpotifyId={playlistSpotifyId}
                                         onClick={() => onSelectTrack(track.id)}
-                                        onStatusChange={onStatusChange}
-                                        onTrackDeleted={onTrackDeleted}
                                         innerRef={provided.innerRef}
                                         draggableProps={provided.draggableProps}
                                         dragHandleProps={provided.dragHandleProps}

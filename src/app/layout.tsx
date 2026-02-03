@@ -9,19 +9,22 @@ import { TourProvider } from "@/lib/tour-context";
 import { TourOverlay } from "@/components/tour/tour-overlay";
 import { TourTrigger } from "@/components/tour/tour-trigger";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { cookies } from "next/headers";
+import { DemoBanner } from "@/components/demo-banner";
+import { manageDemoState } from "@/lib/demo-service";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 
 async function getAppTitle() {
   try {
-    const adminSupabase = createAdminClient()
-    const { data: settings = [] } = await (adminSupabase as any)
-      .from('app_settings')
+    const adminSupabase = await createAdminClient()
+    const { data: settings } = await adminSupabase
+      .from('app_settings' as any)
       .select('key, value')
       .eq('key', 'page_title')
       .single()
     
-    return settings?.value || 'Playlist Manager'
+    return (settings as any)?.value || 'Playlist Manager'
   } catch (error) {
     return 'Playlist Manager'
   }
@@ -36,11 +39,19 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = await cookies()
+  const isDemo = cookieStore.get('site_mode')?.value === 'demo'
+
+  if (isDemo) {
+    // Check inactivity and reset if needed
+    await manageDemoState()
+  }
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={cn(
@@ -49,16 +60,17 @@ export default function RootLayout({
         )}>
         <MobileMenuProvider>
           <TourProvider>
-            <div className="flex flex-col md:flex-row min-h-screen">
+            <div className="flex flex-col md:flex-row h-screen overflow-hidden">
               {/* Mobile menu button and sidebar overlay */}
               <MobileNavButton />
               <MobileSidebarWrapper />
               
               {/* Desktop sidebar */}
-              <Sidebar className="hidden md:block" />
+              <Sidebar className="hidden md:block overflow-y-auto" />
               
               {/* Main content */}
               <main className="flex-1 overflow-y-auto">
+                {isDemo && <DemoBanner />}
                 <TourTrigger />
                 <TourOverlay />
                 {children}

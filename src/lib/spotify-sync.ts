@@ -220,3 +220,44 @@ export async function syncWebappToSpotify(playlistId: string, playlistSpotifyId:
     return false
   }
 }
+
+/**
+ * Sync ONLY metadata (Title, Description, Vibe-ish) from Spotify to Webapp
+ */
+export async function syncPlaylistMetadata(playlistId: string, playlistSpotifyId: string) {
+  const supabase = await createAdminClient()
+  const spotify = await getSpotifyClient()
+
+  try {
+    const { body: playlist } = await spotify.getPlaylist(playlistSpotifyId)
+    
+    // We only update description if it exists on Spotify.
+    // Spotify descriptions are often plain text.
+    // We map Spotify description to our 'description' field.
+    // 'vibe' is not standard on Spotify, so we leave it unless we want to try to parse it from description.
+    
+    const updateData: any = {
+      spotify_title: playlist.name, // Keep track of the actual Spotify title separate from our display title?
+      // Or just update our title? The user requested "pull in metadata... like description"
+      // Let's update description.
+    }
+
+    if (playlist.description) {
+        updateData.description = playlist.description
+    }
+
+    if (Object.keys(updateData).length > 0) {
+        await supabase
+            .from('playlists')
+            .update(updateData)
+            .eq('id', playlistId)
+        
+        console.log(`Updated metadata for playlist ${playlistId}`)
+    }
+    
+    return true
+  } catch (error) {
+    console.error(`Failed to sync metadata for playlist ${playlistId}:`, error)
+    return false
+  }
+}

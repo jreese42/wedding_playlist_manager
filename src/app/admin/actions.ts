@@ -47,7 +47,7 @@ export async function seedPlaylists(prevState: ActionState): Promise<ActionState
 
     try {
         // Use Admin Client to bypass RLS and ensure we can DELETE ALL
-        const supabase = createAdminClient()
+        const supabase = await createAdminClient()
         const playlistsDir = path.join(process.cwd(), 'Playlists')
         log(`Scanning directory: ${playlistsDir}`)
         
@@ -120,6 +120,10 @@ export async function seedPlaylists(prevState: ActionState): Promise<ActionState
     }
 }
 
+import { syncPlaylistMetadata } from '@/lib/spotify-sync'
+
+// ... existing imports
+
 export async function syncTracksFromSpotify(prevState: ActionState): Promise<ActionState> {
     const supabase = await createClient()
     const spotify = await getSpotifyClient()
@@ -134,6 +138,9 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
         if (!playlist.spotify_id) continue;
 
         try {
+            // 0. Sync Metadata First
+            await syncPlaylistMetadata(playlist.id, playlist.spotify_id)
+
             // 2. Fetch tracks from Spotify
             let allTracks = []
             let offset = 0
@@ -216,5 +223,38 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
     }
     
     revalidatePath('/admin')
+    return { success: true, results }
+}
+
+export async function syncMetadataOnly(prevState: ActionState): Promise<ActionState> {
+    const supabase = await createClient()
+    
+    // 1. Get all playlists from DB
+    const { data: playlists, error: dbError } = await supabase.from('playlists').select('*')
+    if (dbError) return { success: false, results: [], error: dbError.message }
+
+    const results = []
+
+    for (const playlist of playlists) {
+        if (!playlist.spotify_id) {
+            results.push({ playlist: playlist.title, status: 'skipped', reason: 'No Spotify ID' })
+            continue;
+        }
+
+        try {
+            const success = await syncPlaylistMetadata(playlist.id, playlist.spotify_id)
+            if (success) {
+                results.push({ playlist: playlist.title, status: 'success' })
+            } else {
+                results.push({ playlist: playlist.title, status: 'error', reason: 'Failed to fetch metadata' })
+            }
+        } catch (e: any) {
+            console.error(`Error syncing metadata for ${playlist.title}:`, e)
+            results.push({ playlist: playlist.title, status: 'error', reason: e.message })
+        }
+    }
+    
+    revalidatePath('/admin')
+    revalidatePath('/')
     return { success: true, results }
 }

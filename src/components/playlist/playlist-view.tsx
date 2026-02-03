@@ -10,7 +10,7 @@ import { SpotifySearch } from '@/components/playlist/spotify-search'
 import { SyncStatus } from '@/components/playlist/sync-status'
 import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
 import { AIAssistantModal } from '@/components/ai-assistant-modal'
-import { createClient } from '@/lib/supabase/client'
+import { usePlaylistSubscription } from '@/lib/hooks/use-playlist-subscription'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row'] & {
@@ -28,113 +28,12 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const [filterText, setFilterText] = useState('')
     const [showRemoved, setShowRemoved] = useState(false)
     const [isAIModalOpen, setIsAIModalOpen] = useState(false)
-    const [playlistTracks, setPlaylistTracks] = useState(tracks)
-    
-    // Setup real-time subscription for track changes
+    const { tracks: playlistTracks, addTrack } = usePlaylistSubscription(playlist.id, tracks)
+    const [isClient, setIsClient] = useState(false)
+
     useEffect(() => {
-        const supabase = createClient()
-        
-        let channel: any
-        let pollInterval: NodeJS.Timeout | null = null
-        
-        // Start polling as fallback
-        const startPolling = () => {
-            if (pollInterval) return // Already running
-            
-            pollInterval = setInterval(async () => {
-                try {
-                    const { data } = await supabase
-                        .from('tracks')
-                        .select('*')
-                        .eq('playlist_id', playlist.id)
-                        .order('position', { ascending: true })
-                    
-                    if (data) {
-                        // Only update if something changed
-                        const dataStr = JSON.stringify(data.sort((a: any, b: any) => a.id.localeCompare(b.id)))
-                        const prevStr = JSON.stringify(playlistTracks.sort((a, b) => a.id.localeCompare(b.id)))
-                        
-                        if (dataStr !== prevStr) {
-                            setPlaylistTracks(data as Track[])
-                        }
-                    }
-                } catch (error) {
-                    // Silently handle polling errors
-                }
-            }, 30000) // Poll every 30 seconds
-        }
-        
-        try {
-            channel = supabase
-                .channel(`tracks-${playlist.id}`)
-                .on(
-                    'postgres_changes',
-                    {
-                        event: '*',
-                        schema: 'public',
-                        table: 'tracks',
-                        filter: `playlist_id=eq.${playlist.id}`
-                    },
-                    (payload) => {
-                        // Handle INSERT event
-                        if (payload.eventType === 'INSERT') {
-                            const newTrack = payload.new as Track
-                            setPlaylistTracks(prev => {
-                                // Check if track already exists (avoid duplicates)
-                                if (prev.some(t => t.id === newTrack.id)) {
-                                    return prev
-                                }
-                                // Add and sort by position
-                                return [...prev, newTrack].sort((a, b) => (a.position || 0) - (b.position || 0))
-                            })
-                        }
-                        // Handle UPDATE event
-                        else if (payload.eventType === 'UPDATE') {
-                            const updatedTrack = payload.new as Track
-                            setPlaylistTracks(prev => {
-                                // Update the track and sort by position (important for drag-and-drop)
-                                const updated = prev.map(t => 
-                                    t.id === updatedTrack.id ? updatedTrack : t
-                                )
-                                return updated.sort((a, b) => (a.position || 0) - (b.position || 0))
-                            })
-                        }
-                        // Handle DELETE event
-                        else if (payload.eventType === 'DELETE') {
-                            const deletedTrack = payload.old as Track
-                            setPlaylistTracks(prev => prev.filter(t => t.id !== deletedTrack.id))
-                        }
-                    }
-                )
-                .subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
-                        // Disable polling if realtime connected
-                        if (pollInterval) {
-                            clearInterval(pollInterval)
-                            pollInterval = null
-                        }
-                    } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                        startPolling()
-                    }
-                })
-        } catch (error) {
-            // Fallback to polling on error
-            startPolling()
-        }
-        
-        // Start polling immediately in case realtime isn't enabled
-        startPolling()
-        
-        // Cleanup on unmount
-        return () => {
-            if (channel) {
-                supabase.removeChannel(channel)
-            }
-            if (pollInterval) {
-                clearInterval(pollInterval)
-            }
-        }
-    }, [playlist.id])
+        setIsClient(true)
+    }, [])
     
     const activeTracks = playlistTracks.filter(t => t.status === 'active')
     const inactiveTracks = playlistTracks.filter(t => t.status !== 'active')
@@ -159,23 +58,11 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
     const hours = Math.floor(totalDurationMs / 3600000)
     const minutes = Math.floor((totalDurationMs % 3600000) / 60000)
 
-    const handleStatusChange = (trackId: string, newStatus: 'active' | 'suggested' | 'rejected') => {
-        // Update track status in state
-        setPlaylistTracks(prev => prev.map(t => 
-            t.id === trackId ? { ...t, status: newStatus } : t
-        ))
-    }
-
-    const handleTrackDeleted = (trackId: string) => {
-        // Remove track from state
-        setPlaylistTracks(prev => prev.filter(t => t.id !== trackId))
-    }
-
     const handlePinComment = (trackId: string, comment: string | null) => {
-        // Update track's pinned_comment in state
-        setPlaylistTracks(prev => prev.map(t =>
-            t.id === trackId ? { ...t, pinned_comment: comment } : t
-        ))
+        // This is optimistic - no server roundtrip. Handled by subscription.
+        // setPlaylistTracks(prev => prev.map(t =>
+        //     t.id === trackId ? { ...t, pinned_comment: comment } : t
+        // ))
     }
 
     return (
@@ -187,7 +74,7 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
             />
 
             {/* Header */}
-            <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 p-4 md:p-8 md:pb-6 pt-16 md:pt-0" data-tour="playlist-header">
+            <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 p-4 md:p-8 md:pb-6 pt-16 md:pt-6" data-tour="playlist-header">
                 <div className="h-40 md:h-52 w-40 md:w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-4xl md:text-6xl font-bold text-white/20 select-none flex-shrink-0">
                     {playlist.title.charAt(0)}
                 </div>
@@ -237,14 +124,14 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                     </div>
 
                     {/* Active List */}
-                    <TrackList 
-                        initialTracks={activeTracks} 
-                        playlistId={playlist.id} 
-                        playlistSpotifyId={playlist.spotify_id} 
-                        onSelectTrack={(trackId) => setSelectedTrack(playlistTracks.find(t => t.id === trackId) || null)}
-                        onStatusChange={handleStatusChange}
-                        onTrackDeleted={handleTrackDeleted}
-                    />
+                    {isClient && (
+                        <TrackList 
+                            tracks={activeTracks} 
+                            playlistId={playlist.id} 
+                            playlistSpotifyId={playlist.spotify_id} 
+                            onSelectTrack={(trackId) => setSelectedTrack(playlistTracks.find(t => t.id === trackId) || null)}
+                        />
+                    )}
 
                     <div className="mt-4" data-tour="add-songs-bar">
                         <SpotifySearch 
@@ -287,8 +174,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                                                 playlistSpotifyId={playlist.spotify_id}
                                                 onClick={() => setSelectedTrack(track)}
                                                 isAdmin={isAdmin}
-                                                onStatusChange={handleStatusChange}
-                                                onTrackDeleted={handleTrackDeleted}
                                             />
                                         ))}
                                     </div>
@@ -333,6 +218,9 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                 onClose={() => setIsAIModalOpen(false)}
                 playlist={playlist}
                 existingTracks={playlistTracks}
+                onSongsAdded={(newTracks) => {
+                    newTracks.forEach(track => addTrack({ ...track, profiles: null }))
+                }}
             />
         </div>
     )

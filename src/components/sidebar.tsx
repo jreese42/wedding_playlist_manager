@@ -12,14 +12,18 @@ export async function Sidebar({ className }: SidebarProps) {
   const { data: { user } } = await supabase.auth.getUser();
   const isAdmin = await checkIfAdmin();
 
-  // Fetch playlists from database
-  const { data: playlists = [] } = await supabase
-    .from('playlists')
-    .select('id, title')
-    .order('display_order', { ascending: true });
+  // Fetch playlists from database only if authenticated
+  let playlists: any[] = []
+  if (user) {
+    const { data } = await supabase
+        .from('playlists')
+        .select('id, title')
+        .order('display_order', { ascending: true });
+    playlists = data || []
+  }
 
   return (
-    <div className={cn("pb-12 min-h-screen w-64 border-r bg-zinc-950 text-white hidden md:block", className)} data-tour="navigation">
+    <div className={cn("pb-12 h-full w-64 border-r bg-zinc-950 text-white hidden md:block", className)} data-tour="navigation">
       <div className="space-y-4 py-4">
         <div className="px-3 py-2">
           <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
@@ -36,6 +40,7 @@ export async function Sidebar({ className }: SidebarProps) {
         </div>
 
         {/* Dynamic Playlists Section */}
+        {user && (
         <div className="px-3 py-2">
           <div className="flex items-center justify-between mb-2">
             <h2 className="px-4 text-lg font-semibold tracking-tight">
@@ -51,7 +56,7 @@ export async function Sidebar({ className }: SidebarProps) {
             {(!playlists || playlists.length === 0) ? (
               <p className="px-4 py-2 text-xs text-zinc-500">No playlists yet. Click the edit button to add one.</p>
             ) : (
-              playlists.map((playlist) => (
+              playlists.map((playlist: any) => (
                 <Link key={playlist.id} href={`/playlist/${playlist.id}`}>
                   <button className="w-full justify-start flex items-center gap-2 px-4 py-2 hover:bg-zinc-800 rounded-md transition-colors text-sm font-medium">
                     <Music className="h-4 w-4" />
@@ -62,6 +67,7 @@ export async function Sidebar({ className }: SidebarProps) {
             )}
           </div>
         </div>
+        )}
         
         {isAdmin && (
          <div className="px-3 py-2">

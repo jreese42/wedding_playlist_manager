@@ -82,12 +82,24 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
         .eq('id', trackId)
         .single()
 
+    if (!track) throw new Error('Track not found')
+
     // 1. Update the track
     const updateData: any = { status }
     
-    // If moving to active, set added_by
-    if (status === 'active') {
+    // If moving to active from a different status, set added_by and calculate new position
+    if (status === 'active' && track.status !== 'active') {
         updateData.added_by = user.id
+        if (track.playlist_id) {
+            const { data: maxPosData } = await supabase.from('tracks')
+                .select('position')
+                .eq('playlist_id', track.playlist_id)
+                .not('position', 'is', null) // Ensure we only consider tracks with a position
+                .order('position', { ascending: false })
+                .limit(1)
+                .single()
+            updateData.position = (maxPosData?.position || 0) + 1
+        }
     }
     
     const { error } = await supabase.from('tracks')

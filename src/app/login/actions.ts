@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { cookies } from 'next/headers'
 
 export async function login(prevState: { error: string }, formData: FormData) {
   const supabase = await createClient()
@@ -25,8 +26,16 @@ export async function login(prevState: { error: string }, formData: FormData) {
 
 export async function logout() {
   const supabase = await createClient()
+  const cookieStore = await cookies()
+
   console.log('[logout] Signing out user')
   await supabase.auth.signOut()
+
+  // Clear demo mode cookie if present
+  if (cookieStore.get('site_mode')) {
+    cookieStore.delete('site_mode')
+  }
+
   console.log('[logout] User signed out, revalidating paths')
   revalidatePath('/', 'layout')
   revalidatePath('/')

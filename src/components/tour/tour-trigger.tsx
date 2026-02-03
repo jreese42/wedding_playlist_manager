@@ -1,10 +1,11 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useTour } from '@/lib/tour-context'
 import { WELCOME_TOUR_STEPS } from '@/lib/tour-steps'
-import { hasTourBeenCompleted, isTourInProgress, markTourInProgress } from '@/lib/tour-service'
+import { hasTourBeenCompleted, isTourInProgress, markTourInProgress, resetTourCompletion } from '@/lib/tour-service'
 import { createClient } from '@/lib/supabase/client'
+import { useSearchParams } from 'next/navigation'
 
 /**
  * This component should be placed in the root layout
@@ -12,18 +13,50 @@ import { createClient } from '@/lib/supabase/client'
  */
 export function TourTrigger() {
   const { startTour } = useTour()
+  const searchParams = useSearchParams()
+  const hasCheckedRef = useRef(false)
 
   useEffect(() => {
-    const checkAuthAndStartTour = async () => {
-      // Check if user is authenticated
-      const supabase = await createClient()
-      const { data: { user } } = await supabase.auth.getUser()
+    const supabase = createClient()
+
+    const runTourCheck = (user: any) => {
+      // If we've already checked and started the tour in this session mount, skip
+      if (hasCheckedRef.current) return
       
-      // Only proceed if user is logged in
-      if (!user) {
+      const shouldForceTour = document.cookie.includes('start_tour=true') || searchParams.get('tour') === 'true'
+
+      if (shouldForceTour) {
+        // Clear cookie if present
+        if (document.cookie.includes('start_tour=true')) {
+            document.cookie = 'start_tour=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT'
+        }
+        
+        // Reset tour completion so it runs fresh for this demo session
+        resetTourCompletion()
+        
+        // Wait for Sidebar to hydrate and find a playlist to navigate to
+        let attempts = 0
+        const findAndNavigate = setInterval(() => {
+            attempts++
+            const firstPlaylistLink = document.querySelector('[data-tour="navigation"] a[href*="/playlist/"]') as HTMLAnchorElement
+            
+            if (firstPlaylistLink?.getAttribute('href')) {
+                clearInterval(findAndNavigate)
+                sessionStorage.setItem('tour_start_after_navigation', 'true')
+                window.location.href = firstPlaylistLink.getAttribute('href')!
+            } else if (attempts > 10) {
+                // Give up after 5 seconds, start on home
+                clearInterval(findAndNavigate)
+                startTour(WELCOME_TOUR_STEPS)
+                hasCheckedRef.current = true
+            }
+        }, 500)
         return
       }
-      
+
+      // For normal checks, require user
+      if (!user) return
+
       // Check if tour has been completed or is already in progress
       const completed = hasTourBeenCompleted()
       const inProgress = isTourInProgress()
@@ -38,13 +71,13 @@ export function TourTrigger() {
         
         if (isOnPlaylist) {
           // We're already on a playlist, start tour immediately
-          const timer = setTimeout(() => {
+          setTimeout(() => {
             startTour(WELCOME_TOUR_STEPS)
+            hasCheckedRef.current = true
           }, 500)
-          return () => clearTimeout(timer)
         } else {
           // Navigate to first playlist and start tour after navigation
-          const timer = setTimeout(() => {
+          setTimeout(() => {
             // Get first playlist link from DOM
             const firstPlaylistLink = document.querySelector('[data-tour="navigation"] a[href*="/playlist/"]') as HTMLAnchorElement
             if (firstPlaylistLink) {
@@ -57,9 +90,9 @@ export function TourTrigger() {
             } else {
               // No playlist found, just start tour on home
               startTour(WELCOME_TOUR_STEPS)
+              hasCheckedRef.current = true
             }
           }, 500)
-          return () => clearTimeout(timer)
         }
       }
       
@@ -68,16 +101,34 @@ export function TourTrigger() {
         const shouldStart = sessionStorage.getItem('tour_start_after_navigation')
         if (shouldStart === 'true') {
           sessionStorage.removeItem('tour_start_after_navigation')
-          const timer = setTimeout(() => {
+          setTimeout(() => {
             startTour(WELCOME_TOUR_STEPS)
+            hasCheckedRef.current = true
           }, 1000)
-          return () => clearTimeout(timer)
         }
       }
     }
-    
-    checkAuthAndStartTour()
-  }, [startTour])
+
+    // Check immediately
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+        if (user) {
+            runTourCheck(user)
+        } else {
+            runTourCheck(null)
+        }
+    })
+
+    // Listen for auth changes (this handles the latency issue)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        if (session?.user) {
+            runTourCheck(session.user)
+        }
+    })
+
+    return () => {
+        subscription.unsubscribe()
+    }
+  }, [startTour, searchParams])
 
   return null
 }

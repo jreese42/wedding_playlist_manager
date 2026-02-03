@@ -5,8 +5,12 @@ import { ChangePasswordForm } from '@/components/profile/change-password-form'
 import { RestartTourButton } from '@/components/tour/restart-tour-button'
 import { ArrowLeft, Lock, HelpCircle } from 'lucide-react'
 import Link from 'next/link'
+import { cookies } from 'next/headers'
+import { goToDemoLogin } from '../demo/actions'
 
 export default async function SettingsPage() {
+  const cookieStore = await cookies()
+  const isDemoMode = cookieStore.get('site_mode')?.value === 'demo'
   const supabase = await createClient()
 
   // Get current user
@@ -71,9 +75,21 @@ export default async function SettingsPage() {
               <Lock size={20} className="text-indigo-400" />
               <h2 className="text-lg font-semibold text-white">Security</h2>
             </div>
-            <ChangePasswordForm />
+            <ChangePasswordForm disabled={isDemoMode} />
           </div>
         </div>
+        {isDemoMode && (
+          <div className="text-center mt-8">
+            <form action={goToDemoLogin}>
+              <button
+                type="submit"
+                className="text-xs text-zinc-500 hover:text-zinc-300 hover:underline transition-colors"
+              >
+                Demo Admin Login
+              </button>
+            </form>
+          </div>
+        )}
       </div>
     </div>
   )

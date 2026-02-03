@@ -25,7 +25,7 @@ export default async function Home() {
     redirect('/login')
   }
   
-  const adminSupabase = createAdminClient()
+  const adminSupabase = await createAdminClient()
   
   // Fetch app settings using admin client (has access to app_settings table)
   const { data: appSettingsArray = [] } = await (adminSupabase as any)

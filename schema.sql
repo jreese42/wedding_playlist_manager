@@ -127,7 +127,8 @@ begin
   where id = p_track_id;
 
   -- 3. Log to Audit
-  insert into audit_log (track_id, user_id, action, 'move', jsonb_build_object('from', p_old_position, 'to', p_new_position));
+  insert into audit_log (track_id, user_id, action, details) 
+  values (p_track_id, p_user_id, 'move', jsonb_build_object('from', p_old_position, 'to', p_new_position));
 end;
 $$ language plpgsql;
 
@@ -152,3 +153,8 @@ insert into app_settings (key, value, description) values
   ('homepage_text', 'Welcome to the Playlist Manager', 'Main heading text on homepage'),
   ('homepage_subtitle', 'Collaborate on the perfect playlist for the big day', 'Subtitle text on homepage')
 on conflict (key) do nothing;
+
+-- Enable Realtime for tracks and audit_log tables
+-- This allows real-time subscriptions to track changes
+DROP PUBLICATION IF EXISTS supabase_realtime CASCADE;
+CREATE PUBLICATION supabase_realtime FOR TABLE tracks, audit_log;
