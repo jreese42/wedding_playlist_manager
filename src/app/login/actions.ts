@@ -6,7 +6,24 @@ import { createClient } from '@/lib/supabase/server'
 import { cookies } from 'next/headers'
 
 export async function login(prevState: { error: string }, formData: FormData) {
-  const supabase = await createClient()
+  const remember = formData.get('remember') === 'on'
+  
+  const supabase = await createClient((name, options) => {
+    // Only modify auth cookies
+    if (name.startsWith('sb-')) {
+      if (remember) {
+        return {
+          ...options,
+          maxAge: 60 * 60 * 24 * 365, // 1 year
+        }
+      } else {
+        // Remove maxAge and expires for session cookie
+        const { maxAge, expires, ...rest } = options
+        return rest
+      }
+    }
+    return options
+  })
 
   const email = formData.get('email') as string
   const password = formData.get('password') as string

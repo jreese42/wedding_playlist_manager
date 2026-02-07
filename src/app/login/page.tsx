@@ -51,6 +51,18 @@ export default function LoginPage() {
                 placeholder="Password"
               />
             </div>
+            <div className="flex items-center">
+              <input
+                id="remember"
+                name="remember"
+                type="checkbox"
+                defaultChecked
+                className="h-4 w-4 rounded border-zinc-700 bg-zinc-900 text-indigo-600 focus:ring-indigo-600 focus:ring-offset-zinc-900"
+              />
+              <label htmlFor="remember" className="ml-2 block text-sm text-zinc-400">
+                Remember me
+              </label>
+            </div>
           </div>
 
           {state?.error && (

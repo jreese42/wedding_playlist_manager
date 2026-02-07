@@ -1,8 +1,8 @@
-import { createServerClient } from '@supabase/ssr'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { Database } from '../database.types'
 
-export async function createClient() {
+export async function createClient(cookieOptionsModifier?: (name: string, options: CookieOptions) => CookieOptions) {
   const cookieStore = await cookies()
   const isDemo = cookieStore.get('site_mode')?.value === 'demo'
 
@@ -24,13 +24,14 @@ export async function createClient() {
         },
         setAll(cookiesToSet) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const modifiedOptions = cookieOptionsModifier ? cookieOptionsModifier(name, options) : options
               cookieStore.set(name, value, {
-                ...options,
+                ...modifiedOptions,
                 // Ensure client can read the cookie for hydration
                 httpOnly: false, 
               })
-            )
+            })
           } catch {
             // The `setAll` method was called from a Server Component.
             // This can be ignored if you have middleware refreshing
