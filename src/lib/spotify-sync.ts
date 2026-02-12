@@ -1,10 +1,21 @@
 /**
  * Spotify Sync Utilities
  * Handles bidirectional synchronization between the webapp and Spotify playlists
+ * 
+ * Updated for Feb 2026 Spotify API changes:
+ * - All playlist track endpoints renamed from /tracks to /items
+ * - Response fields renamed: tracks → items, track → item
+ * - Playlist items only returned for owner's playlists (requires admin OAuth)
  */
 
-import { getSpotifyClient, getSpotifyUserClient, isSpotifyWriteEnabled } from './spotify'
-import { createClient } from './supabase/server'
+import {
+  getPlaylistItems,
+  addItemsToPlaylist,
+  removeItemsFromPlaylist,
+  replacePlaylistItems,
+  isSpotifyConnected,
+  spotifyFetch,
+} from './spotify'
 import { createAdminClient } from './supabase/admin'
 
 /**
@@ -32,73 +43,119 @@ export function extractSpotifyId(uri: string): string | null {
 }
 
 /**
- * Add a single track to a Spotify playlist
- * CURRENTLY DISABLED - Spotify OAuth temporarily unavailable
+ * Add a single track to a Spotify playlist.
+ * Uses POST /playlists/{id}/items (Feb 2026 API).
  */
 export async function addTrackToSpotify(
   playlistSpotifyId: string,
   trackSpotifyUri: string
 ): Promise<boolean> {
-  // Spotify write sync temporarily disabled
-  console.log('Spotify write sync temporarily disabled. Track added to webapp only.')
-  return false
+  const connected = await isSpotifyConnected()
+  if (!connected) {
+    console.log('Spotify not connected. Track added to webapp only.')
+    return false
+  }
+
+  try {
+    await addItemsToPlaylist(playlistSpotifyId, [trackSpotifyUri])
+    console.log(`Added track ${trackSpotifyUri} to Spotify playlist ${playlistSpotifyId}`)
+    return true
+  } catch (error) {
+    console.error('Failed to add track to Spotify:', error)
+    return false
+  }
 }
 
 /**
- * Remove a single track from a Spotify playlist
- * CURRENTLY DISABLED - Spotify OAuth temporarily unavailable
+ * Remove a single track from a Spotify playlist.
+ * Uses DELETE /playlists/{id}/items (Feb 2026 API).
  */
 export async function removeTrackFromSpotify(
   playlistSpotifyId: string,
   trackSpotifyUri: string
 ): Promise<boolean> {
-  // Spotify write sync temporarily disabled
-  console.log('Spotify write sync temporarily disabled. Track removed from webapp only.')
-  return false
+  const connected = await isSpotifyConnected()
+  if (!connected) {
+    console.log('Spotify not connected. Track removed from webapp only.')
+    return false
+  }
+
+  try {
+    await removeItemsFromPlaylist(playlistSpotifyId, [trackSpotifyUri])
+    console.log(`Removed track ${trackSpotifyUri} from Spotify playlist ${playlistSpotifyId}`)
+    return true
+  } catch (error) {
+    console.error('Failed to remove track from Spotify:', error)
+    return false
+  }
 }
 
 /**
- * Reorder all tracks in a Spotify playlist to match the given order
- * CURRENTLY DISABLED - Spotify OAuth temporarily unavailable
+ * Replace all tracks in a Spotify playlist to match the given order.
+ * Uses PUT /playlists/{id}/items (Feb 2026 API).
  */
 export async function reorderTracksInSpotify(
   playlistSpotifyId: string,
   trackSpotifyUris: string[]
 ): Promise<boolean> {
-  // Spotify write sync temporarily disabled
-  console.log('Spotify write sync temporarily disabled. Tracks reordered in webapp only.')
-  return false
+  const connected = await isSpotifyConnected()
+  if (!connected) {
+    console.log('Spotify not connected. Tracks reordered in webapp only.')
+    return false
+  }
+
+  try {
+    await replacePlaylistItems(playlistSpotifyId, trackSpotifyUris)
+    console.log(`Replaced ${trackSpotifyUris.length} tracks in Spotify playlist ${playlistSpotifyId}`)
+    return true
+  } catch (error) {
+    console.error('Failed to reorder tracks in Spotify:', error)
+    return false
+  }
 }
 
 /**
- * Fetch current tracks from a Spotify playlist
+ * Fetch current tracks from a Spotify playlist.
+ * Uses GET /playlists/{id}/items (Feb 2026 API).
+ * Response fields: items[].item (was items[].track)
  */
 export async function getTracksFromSpotify(
   playlistSpotifyId: string
-): Promise<Array<{ uri: string; name: string; artist: string }>> {
+): Promise<Array<{ uri: string; name: string; artist: string; album: string; artwork_url: string | null; duration_ms: number; artist_uri: string | null; album_uri: string | null }>> {
   try {
-    const spotify = await getSpotifyClient()
+    const connected = await isSpotifyConnected()
+    if (!connected) {
+      console.log('Spotify not connected. Cannot fetch tracks.')
+      return []
+    }
+
     const tracks: any[] = []
     let offset = 0
     const limit = 50
 
     while (true) {
-      const result = await spotify.getPlaylistTracks(playlistSpotifyId, { offset, limit })
-      const items = result.body.items || []
+      const result = await getPlaylistItems(playlistSpotifyId, { offset, limit })
+      const items = result.items || []
       
-      for (const item of items) {
-        const track = item.track as any
-        if (track && track.uri) {
+      for (const entry of items) {
+        // Feb 2026 API: field is now "item" instead of "track"
+        const item = entry.item || (entry as any).track
+        if (item && item.uri) {
           tracks.push({
-            uri: track.uri,
-            name: track.name,
-            artist: track.artists?.[0]?.name || 'Unknown'
+            uri: item.uri,
+            name: item.name,
+            artist: item.artists?.map((a: any) => a.name).join(', ') || 'Unknown',
+            album: item.album?.name || '',
+            artwork_url: item.album?.images?.[0]?.url || null,
+            duration_ms: item.duration_ms || 0,
+            artist_uri: item.artists?.[0]?.uri || null,
+            album_uri: item.album?.uri || null,
           })
         }
       }
 
       offset += limit
-      if (!result.body.next) break
+      if (!result.next) break
     }
 
     return tracks
@@ -222,37 +279,31 @@ export async function syncWebappToSpotify(playlistId: string, playlistSpotifyId:
 }
 
 /**
- * Sync ONLY metadata (Title, Description, Vibe-ish) from Spotify to Webapp
+ * Sync ONLY metadata (Title, Description) from Spotify to Webapp.
+ * Uses GET /playlists/{id} which is still available (Feb 2026 API).
  */
 export async function syncPlaylistMetadata(playlistId: string, playlistSpotifyId: string) {
   const supabase = await createAdminClient()
-  const spotify = await getSpotifyClient()
 
   try {
-    const { body: playlist } = await spotify.getPlaylist(playlistSpotifyId)
-    
-    // We only update description if it exists on Spotify.
-    // Spotify descriptions are often plain text.
-    // We map Spotify description to our 'description' field.
-    // 'vibe' is not standard on Spotify, so we leave it unless we want to try to parse it from description.
+    // Use raw fetch since getPlaylist() via the library may have field changes
+    const playlist = await spotifyFetch(`/playlists/${playlistSpotifyId}`)
     
     const updateData: any = {
-      spotify_title: playlist.name, // Keep track of the actual Spotify title separate from our display title?
-      // Or just update our title? The user requested "pull in metadata... like description"
-      // Let's update description.
+      spotify_title: playlist.name,
     }
 
     if (playlist.description) {
-        updateData.description = playlist.description
+      updateData.description = playlist.description
     }
 
     if (Object.keys(updateData).length > 0) {
-        await supabase
-            .from('playlists')
-            .update(updateData)
-            .eq('id', playlistId)
-        
-        console.log(`Updated metadata for playlist ${playlistId}`)
+      await supabase
+        .from('playlists')
+        .update(updateData)
+        .eq('id', playlistId)
+      
+      console.log(`Updated metadata for playlist ${playlistId}`)
     }
     
     return true

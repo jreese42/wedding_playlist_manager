@@ -161,3 +161,11 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- This allows real-time subscriptions to track changes
 DROP PUBLICATION IF EXISTS supabase_realtime CASCADE;
 CREATE PUBLICATION supabase_realtime FOR TABLE tracks, audit_log;
+
+-- 9. Secure Activity Table (RLS)
+ALTER TABLE public.demo_activity ENABLE ROW LEVEL SECURITY;
+
+-- Allow public read access (so anyone can check if demo is active)
+DROP POLICY IF EXISTS "Public can view demo activity" ON public.demo_activity;
+CREATE POLICY "Public can view demo activity" ON public.demo_activity
+FOR SELECT USING (true);

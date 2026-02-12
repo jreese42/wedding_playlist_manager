@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getSpotifyClient } from '@/lib/spotify'
+import { getSpotifyClient, getSpotifyClientCredentials } from '@/lib/spotify'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 import { addTrackToSpotify, syncWebappToSpotify } from '@/lib/spotify-sync'
@@ -222,7 +222,12 @@ export async function pinComment(trackId: string, comment: string | null) {
 }
 
 export async function searchSpotify(query: string) {
-    const spotify = await getSpotifyClient()
+    // Use admin OAuth client if available, otherwise fall back to Client Credentials
+    // Search endpoint (GET /search) works with both auth methods
+    let spotify = await getSpotifyClient()
+    if (!spotify) {
+        spotify = await getSpotifyClientCredentials()
+    }
     const response = await spotify.searchTracks(query, { limit: 5 })
     return response.body.tracks?.items || []
 }

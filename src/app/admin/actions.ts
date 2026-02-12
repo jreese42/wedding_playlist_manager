@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getSpotifyClient } from '@/lib/spotify'
+import { getPlaylistItems, isSpotifyConnected, clearSpotifyTokens, getSpotifyConnectionStatus } from '@/lib/spotify'
 import fs from 'fs'
 import path from 'path'
 import { revalidatePath } from 'next/cache'
@@ -125,8 +125,12 @@ import { syncPlaylistMetadata } from '@/lib/spotify-sync'
 // ... existing imports
 
 export async function syncTracksFromSpotify(prevState: ActionState): Promise<ActionState> {
+    const connected = await isSpotifyConnected()
+    if (!connected) {
+        return { success: false, results: [], error: 'Spotify not connected. Connect via the Spotify section above.' }
+    }
+
     const supabase = await createClient()
-    const spotify = await getSpotifyClient()
     
     // 1. Get all playlists from DB
     const { data: playlists, error: dbError } = await supabase.from('playlists').select('*')
@@ -141,16 +145,16 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
             // 0. Sync Metadata First
             await syncPlaylistMetadata(playlist.id, playlist.spotify_id)
 
-            // 2. Fetch tracks from Spotify
-            let allTracks = []
+            // 2. Fetch tracks from Spotify using new /items endpoint
+            let allItems: any[] = []
             let offset = 0
-            let limit = 50
+            const limit = 50
             let hasMore = true
 
             while (hasMore) {
-                const response = await spotify.getPlaylistTracks(playlist.spotify_id, { offset, limit })
-                allTracks.push(...response.body.items)
-                if (response.body.next) {
+                const response = await getPlaylistItems(playlist.spotify_id, { offset, limit })
+                allItems.push(...(response.items || []))
+                if (response.next) {
                     offset += limit
                 } else {
                     hasMore = false
@@ -158,9 +162,6 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
             }
 
             // 3. Insert into DB
-            // We want to APPEND new songs, but not mess up existing order if possible.
-            // For now, let's just ensure they exist.
-            
             let addedCount = 0;
             let updatedCount = 0;
             
@@ -174,22 +175,23 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
             
             let currentPosition = (maxPosData?.position || 0) + 1
 
-            for (const item of allTracks) {
-                if (!item.track || !item.track.uri) continue;
+            for (const entry of allItems) {
+                // Feb 2026 API: field is now "item" instead of "track"
+                const track = entry.item || entry.track
+                if (!track || !track.uri) continue;
                 
-                const track = item.track as SpotifyApi.TrackObjectFull;
                 const spotify_uri = track.uri;
 
                 const trackData = {
                     playlist_id: playlist.id,
                     title: track.name,
-                    artist: track.artists.map(a => a.name).join(', '),
-                    album: track.album.name,
-                    artwork_url: track.album.images[0]?.url,
+                    artist: track.artists?.map((a: any) => a.name).join(', ') || 'Unknown',
+                    album: track.album?.name || '',
+                    artwork_url: track.album?.images?.[0]?.url || null,
                     spotify_uri: spotify_uri,
-                    artist_spotify_uri: track.artists[0]?.uri, // Link to primary artist
-                    album_spotify_uri: track.album.uri,
-                    duration_ms: track.duration_ms,
+                    artist_spotify_uri: track.artists?.[0]?.uri || null,
+                    album_spotify_uri: track.album?.uri || null,
+                    duration_ms: track.duration_ms || 0,
                 }
 
                 // Check if exists
@@ -200,21 +202,19 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
                     .single()
 
                 if (!existing) {
-                    // Add new track
                     await supabase.from('tracks').insert({
                         ...trackData,
-                        status: 'active', // Sync from Spotify is considered "Approved/Active" by default
+                        status: 'active',
                         position: currentPosition
                     })
                     currentPosition++;
                     addedCount++;
                 } else {
-                    // Update existing track
                     await supabase.from('tracks').update(trackData).eq('id', existing.id)
                     updatedCount++;
                 }
             }
-            results.push({ playlist: playlist.title, added: addedCount, updated: updatedCount, total: allTracks.length })
+            results.push({ playlist: playlist.title, added: addedCount, updated: updatedCount, total: allItems.length })
 
         } catch (e: any) {
             console.error(`Error syncing playlist ${playlist.title}:`, e)
@@ -227,6 +227,11 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
 }
 
 export async function syncMetadataOnly(prevState: ActionState): Promise<ActionState> {
+    const connected = await isSpotifyConnected()
+    if (!connected) {
+        return { success: false, results: [], error: 'Spotify not connected. Connect via the Spotify section above.' }
+    }
+
     const supabase = await createClient()
     
     // 1. Get all playlists from DB
@@ -257,4 +262,20 @@ export async function syncMetadataOnly(prevState: ActionState): Promise<ActionSt
     revalidatePath('/admin')
     revalidatePath('/')
     return { success: true, results }
+}
+
+/**
+ * Disconnect Spotify: removes stored OAuth tokens.
+ */
+export async function disconnectSpotify() {
+    await clearSpotifyTokens()
+    revalidatePath('/admin')
+    return { success: true }
+}
+
+/**
+ * Fetch Spotify connection status for the admin UI.
+ */
+export async function fetchSpotifyConnectionStatus() {
+    return getSpotifyConnectionStatus()
 }

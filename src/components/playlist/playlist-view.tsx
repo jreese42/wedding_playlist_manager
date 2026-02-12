@@ -7,7 +7,6 @@ import { TrackList } from '@/components/playlist/track-list'
 import { TrackRow } from '@/components/playlist/track-row'
 import { HistoryPanel } from '@/components/playlist/history-panel'
 import { SpotifySearch } from '@/components/playlist/spotify-search'
-import { SyncStatus } from '@/components/playlist/sync-status'
 import { SuggestionsFilter } from '@/components/playlist/suggestions-filter'
 import { AIAssistantModal } from '@/components/ai-assistant-modal'
 import { usePlaylistSubscription } from '@/lib/hooks/use-playlist-subscription'
@@ -101,9 +100,6 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
                         )}
                     </div>
                     <p className="text-zinc-400 max-w-2xl mt-1 text-xs md:text-sm">{playlist.description}</p>
-                    <div className="mt-2">
-                        <SyncStatus playlist={playlist} isAdmin={isAdmin} />
-                    </div>
                 </div>
             </div>
 

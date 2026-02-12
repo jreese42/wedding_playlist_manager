@@ -3,6 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { notFound, redirect } from 'next/navigation'
 import { PlaylistView } from '@/components/playlist/playlist-view'
 import { checkIfAdmin } from '@/lib/auth/helpers'
+import { isSpotifyConnected } from '@/lib/spotify'
+import { syncSpotifyToWebapp } from '@/lib/spotify-sync'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row'] & {
@@ -115,12 +117,21 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
     const { slug } = await params
     const data = await getPlaylist(slug)
     const isAdmin = await checkIfAdmin()
+    const spotifyConnected = await isSpotifyConnected()
     
     if (!data) {
         notFound()
     }
 
     const { playlist, tracks } = data
+
+    // On-load sync: pull latest changes from Spotify → webapp (secondary sync direction)
+    // This runs as a fire-and-forget background task on each page load
+    if (spotifyConnected && playlist.spotify_id) {
+        syncSpotifyToWebapp(playlist.id, playlist.spotify_id).catch((err) => {
+            console.error(`[on-load sync] Failed for playlist ${playlist.id}:`, err)
+        })
+    }
     
     return (
         <PlaylistView playlist={playlist} tracks={tracks} isAdmin={isAdmin} />

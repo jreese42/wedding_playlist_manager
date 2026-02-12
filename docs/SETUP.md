@@ -64,9 +64,18 @@ This enables instant updates across all connected clients.
 
 1. In your Spotify app settings, click "Edit Settings"
 2. Add Redirect URIs:
-   - `http://localhost:3000/callback` (local development)
-   - `https://yourdomain.com/callback` (production)
+   - `http://localhost:3000/api/auth/spotify/callback` (local development)
+   - `https://yourdomain.com/api/auth/spotify/callback` (production)
 3. Click "Save"
+
+### 2.3 Important: Admin Must Own Playlists
+
+The Spotify API (as of February 2026) only returns playlist items for playlists **owned by the authenticated user**. This means:
+
+- The admin account that connects Spotify on the Admin Dashboard must be the **owner** of all linked Spotify playlists.
+- If playlists are owned by a different Spotify account, transfer ownership or recreate them under the admin's account.
+- The admin connects via the **Admin Dashboard → Spotify Connection** card. Tokens are stored in the database and auto-refresh.
+- Only one Spotify account can be connected at a time (single admin token).
 
 ---
 
@@ -83,7 +92,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGc...
 SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 
 # Spotify
-NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id_here
+SPOTIFY_CLIENT_ID=your_client_id_here
 SPOTIFY_CLIENT_SECRET=your_client_secret_here
 
 # Admin Email (the email that will have admin privileges)

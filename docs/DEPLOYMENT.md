@@ -48,3 +48,13 @@ Required Variables:
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
 - `SPOTIFY_CLIENT_ID`
 - `SPOTIFY_CLIENT_SECRET`
+- `ADMIN_EMAIL` — The email of the admin user (used for Spotify OAuth guard)
+
+### Spotify Redirect URI
+After deploying, add your production callback URL to the Spotify Developer Dashboard:
+```
+https://yourdomain.com/api/auth/spotify/callback
+```
+
+### Spotify Admin Connection
+After deployment, the admin must visit the **Admin Dashboard** and click **Connect to Spotify** to link their Spotify account. This stores OAuth tokens in the database for playlist syncing. The admin Spotify account must be the **owner** of all linked Spotify playlists (required by the Spotify API as of February 2026).

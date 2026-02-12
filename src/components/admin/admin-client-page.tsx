@@ -1,10 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState, useState, useEffect } from 'react'
-import { seedPlaylists, syncTracksFromSpotify, syncMetadataOnly, type ActionState } from '@/app/admin/actions'
+import { useActionState, useState, useEffect, useTransition } from 'react'
+import { seedPlaylists, syncTracksFromSpotify, syncMetadataOnly, disconnectSpotify, type ActionState } from '@/app/admin/actions'
 import { saveDemoCheckpoint, clearDemoActivity, resetDemoDatabase } from '@/app/demo/actions'
-import { Users, Save, Trash2, RefreshCw, Info } from 'lucide-react'
+import { Users, Save, Trash2, RefreshCw, Info, Music, Unplug, ExternalLink } from 'lucide-react'
 import { AdminSettingsClient } from './admin-settings-client'
 
 interface AppSetting {
@@ -13,8 +13,16 @@ interface AppSetting {
   description: string | null
 }
 
+interface SpotifyStatus {
+  connected: boolean
+  displayName: string | null
+  spotifyUserId: string | null
+  expiresAt: string | null
+}
+
 interface AdminClientPageProps {
   initialSettings?: AppSetting[]
+  spotifyStatus?: SpotifyStatus
 }
 
 const initialState: ActionState = {
@@ -24,12 +32,13 @@ const initialState: ActionState = {
     logs: []
 }
 
-export function AdminClientPage({ initialSettings = [] }: AdminClientPageProps) {
+export function AdminClientPage({ initialSettings = [], spotifyStatus }: AdminClientPageProps) {
     const [seedState, seedAction, isSeeding] = useActionState(seedPlaylists, initialState)
     const [syncState, syncAction, isSyncing] = useActionState(syncTracksFromSpotify, initialState)
     const [metaState, metaAction, isMetaSyncing] = useActionState(syncMetadataOnly, initialState)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isDemo, setIsDemo] = useState(false)
+    const [isDisconnecting, startDisconnect] = useTransition()
 
     useEffect(() => {
         setIsDemo(document.cookie.includes('site_mode=demo'))
@@ -85,6 +94,56 @@ export function AdminClientPage({ initialSettings = [] }: AdminClientPageProps) 
                     </div>
                 </div>
             )}
+
+            {/* Spotify Connection */}
+            <div className="mb-8 bg-zinc-900 border border-zinc-800 rounded-xl p-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <Music size={20} className="text-green-400" />
+                    <h2 className="text-xl font-semibold">Spotify Connection</h2>
+                </div>
+
+                {spotifyStatus?.connected ? (
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                            <span className="text-green-400 text-sm font-medium">Connected</span>
+                        </div>
+                        <p className="text-zinc-400 text-sm mb-1">
+                            Logged in as <span className="text-white font-medium">{spotifyStatus.displayName || spotifyStatus.spotifyUserId}</span>
+                        </p>
+                        {spotifyStatus.expiresAt && (
+                            <p className="text-zinc-500 text-xs mb-4">
+                                Token expires: {new Date(spotifyStatus.expiresAt).toLocaleString()} (auto-refreshes)
+                            </p>
+                        )}
+                        <button
+                            onClick={() => startDisconnect(async () => { await disconnectSpotify(); window.location.reload() })}
+                            disabled={isDisconnecting}
+                            className="flex items-center gap-2 text-sm text-red-400 hover:text-red-300 border border-red-500/30 hover:border-red-500/50 rounded-md px-3 py-1.5 transition-colors disabled:opacity-50"
+                        >
+                            <Unplug size={14} />
+                            {isDisconnecting ? 'Disconnecting...' : 'Disconnect Spotify'}
+                        </button>
+                    </div>
+                ) : (
+                    <div>
+                        <div className="flex items-center gap-2 mb-3">
+                            <span className="inline-block w-2 h-2 rounded-full bg-zinc-500" />
+                            <span className="text-zinc-400 text-sm">Not connected</span>
+                        </div>
+                        <p className="text-zinc-500 text-sm mb-4">
+                            Connect your Spotify account to enable playlist syncing. The admin account must be the owner of the Spotify playlists.
+                        </p>
+                        <Link
+                            href="/api/auth/spotify/login"
+                            className="inline-flex items-center gap-2 bg-green-600 hover:bg-green-500 text-white text-sm font-medium py-2 px-4 rounded-md transition-colors"
+                        >
+                            <ExternalLink size={14} />
+                            Connect to Spotify
+                        </Link>
+                    </div>
+                )}
+            </div>
 
             {/* Navigation Links */}
             <div className="mb-8 flex gap-4">

@@ -44,7 +44,7 @@ You need to run two SQL scripts against your **new Demo Database**.
     *   Create another new query.
     *   Open the `demo_setup.sql` file from the project root.
     *   Copy its entire contents into the editor.
-    *   Click **"RUN"**. This adds the special tables and functions required for the demo reset feature.
+    *   Click **"RUN"**. This adds the special tables, functions, and **security policies (RLS)** required for the demo reset feature.
 
 ## Step 4: Create the Initial Demo State (Checkpoint)
 

@@ -2,18 +2,18 @@
 
 import { useState, useTransition } from 'react'
 import { Database } from '@/lib/database.types'
-import { RefreshCw, Clock, Check, AlertCircle } from 'lucide-react'
+import { RefreshCw, Clock, Check, AlertCircle, Unplug } from 'lucide-react'
 import { triggerPlaylistSync } from '@/app/playlist/sync-actions'
-import { isSpotifyWriteEnabled } from '@/lib/spotify'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 
 interface SyncStatusProps {
   playlist: Playlist
   isAdmin: boolean
+  spotifyConnected: boolean
 }
 
-export function SyncStatus({ playlist, isAdmin }: SyncStatusProps) {
+export function SyncStatus({ playlist, isAdmin, spotifyConnected }: SyncStatusProps) {
   const [isPending, startTransition] = useTransition()
   const [lastSyncLocal, setLastSyncLocal] = useState<string | null>(playlist.sync_timestamp)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
@@ -60,11 +60,23 @@ export function SyncStatus({ playlist, isAdmin }: SyncStatusProps) {
         )}
       </div>
 
-      {/* Manual Sync Button - Coming Soon */}
-      {isAdmin && (
-        <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-white/50 bg-white/5 border border-white/10 rounded-lg opacity-60">
-          <RefreshCw size={14} />
-          Coming Soon
+      {/* Manual Sync Button (Admin only, when Spotify is connected) */}
+      {isAdmin && spotifyConnected && (
+        <button
+          onClick={handleManualSync}
+          disabled={isPending}
+          className="flex items-center gap-2 px-3 py-1.5 text-sm text-white bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+        >
+          <RefreshCw size={14} className={isPending ? 'animate-spin' : ''} />
+          {isPending ? 'Syncing...' : 'Sync Now'}
+        </button>
+      )}
+
+      {/* Not connected indicator (Admin only) */}
+      {isAdmin && !spotifyConnected && (
+        <div className="flex items-center gap-2 px-3 py-1.5 text-sm text-zinc-500 bg-white/5 border border-white/10 rounded-lg">
+          <Unplug size={14} />
+          Spotify not linked
         </div>
       )}
 

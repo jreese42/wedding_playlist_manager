@@ -7,6 +7,7 @@ import { revalidatePath } from 'next/cache'
 async function fetchSpotifyPlaylistTitle(spotifyId: string): Promise<string | null> {
     try {
         const spotify = await getSpotifyClient()
+        if (!spotify) return null
         const playlist = await spotify.getPlaylist(spotifyId)
         return playlist.body.name || null
     } catch (error) {

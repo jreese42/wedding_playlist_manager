@@ -158,3 +158,19 @@ on conflict (key) do nothing;
 -- This allows real-time subscriptions to track changes
 DROP PUBLICATION IF EXISTS supabase_realtime CASCADE;
 CREATE PUBLICATION supabase_realtime FOR TABLE tracks, audit_log;
+
+-- Spotify Tokens Table (Admin-only, single row)
+-- Stores the admin's OAuth tokens for Spotify API access
+create table spotify_tokens (
+  id int primary key default 1,
+  access_token text not null,
+  refresh_token text not null,
+  expires_at timestamp with time zone not null,
+  spotify_user_id text,
+  spotify_display_name text,
+  updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+  constraint single_row check (id = 1)
+);
+
+-- RLS for Spotify Tokens — NO public policies (service role only)
+alter table spotify_tokens enable row level security;
