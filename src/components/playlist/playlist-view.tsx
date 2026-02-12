@@ -74,15 +74,21 @@ export function PlaylistView({ playlist, tracks, isAdmin }: PlaylistViewProps) {
 
             {/* Header */}
             <div className="flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-6 p-4 md:p-8 md:pb-6 pt-16 md:pt-6" data-tour="playlist-header">
-                <div className="h-40 md:h-52 w-40 md:w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-4xl md:text-6xl font-bold text-white/20 select-none flex-shrink-0">
-                    {playlist.title.charAt(0)}
-                </div>
+                {playlist.cover_url ? (
+                    <img 
+                        src={playlist.cover_url} 
+                        alt={playlist.title}
+                        className="h-40 md:h-52 w-40 md:w-52 shadow-2xl object-cover flex-shrink-0"
+                    />
+                ) : (
+                    <div className="h-40 md:h-52 w-40 md:w-52 shadow-2xl bg-gradient-to-br from-indigo-500 to-purple-700 flex items-center justify-center text-4xl md:text-6xl font-bold text-white/20 select-none flex-shrink-0">
+                        {playlist.title.charAt(0)}
+                    </div>
+                )}
                 <div className="flex flex-col gap-3 flex-1 w-full md:w-auto">
                     <h1 className="text-3xl md:text-7xl font-black text-white tracking-tight break-words">{playlist.title}</h1>
                     <div className="flex flex-col gap-2">
                         <div className="flex flex-wrap items-center gap-2 text-xs md:text-sm text-zinc-300 font-medium">
-                            <span className="text-white">{playlist.vibe}</span>
-                            <span>•</span>
                             <span>{playlistTracks.length} songs, {hours} hr {minutes} min</span>
                         </div>
                         {playlist.spotify_id && (

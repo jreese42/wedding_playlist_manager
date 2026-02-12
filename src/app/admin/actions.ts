@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPlaylistItems, isSpotifyConnected, clearSpotifyTokens, getSpotifyConnectionStatus } from '@/lib/spotify'
+import { buildTrackRow } from '@/lib/spotify-sync'
 import fs from 'fs'
 import path from 'path'
 import { revalidatePath } from 'next/cache'
@@ -182,18 +183,6 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
                 
                 const spotify_uri = track.uri;
 
-                const trackData = {
-                    playlist_id: playlist.id,
-                    title: track.name,
-                    artist: track.artists?.map((a: any) => a.name).join(', ') || 'Unknown',
-                    album: track.album?.name || '',
-                    artwork_url: track.album?.images?.[0]?.url || null,
-                    spotify_uri: spotify_uri,
-                    artist_spotify_uri: track.artists?.[0]?.uri || null,
-                    album_spotify_uri: track.album?.uri || null,
-                    duration_ms: track.duration_ms || 0,
-                }
-
                 // Check if exists
                 const { data: existing } = await supabase.from('tracks')
                     .select('id')
@@ -201,16 +190,20 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
                     .eq('spotify_uri', spotify_uri)
                     .single()
 
+                const trackRow = buildTrackRow(track, {
+                    playlist_id: playlist.id,
+                    status: 'active',
+                    position: existing ? null : currentPosition, // only set position for new tracks
+                })
+
                 if (!existing) {
-                    await supabase.from('tracks').insert({
-                        ...trackData,
-                        status: 'active',
-                        position: currentPosition
-                    })
+                    await supabase.from('tracks').insert({ ...trackRow, position: currentPosition })
                     currentPosition++;
                     addedCount++;
                 } else {
-                    await supabase.from('tracks').update(trackData).eq('id', existing.id)
+                    // Update metadata but preserve status/position/added_by
+                    const { status, position, added_by, suggested_by, ...metadata } = trackRow
+                    await supabase.from('tracks').update(metadata).eq('id', existing.id)
                     updatedCount++;
                 }
             }

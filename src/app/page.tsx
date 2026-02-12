@@ -40,7 +40,7 @@ export default async function Home() {
   // Fetch playlists - use explicit columns to avoid schema cache issues
   const { data: playlists } = await supabase
     .from('playlists')
-    .select('id, title, vibe, spotify_id, spotify_title, display_order')
+    .select('id, title, description, spotify_id, spotify_title, display_order')
     .order('display_order', { ascending: true })
 
   const gradients = [
@@ -73,7 +73,7 @@ export default async function Home() {
                   key={playlist.id}
                   slug={slug}
                   title={playlist.title}
-                  vibe={playlist.vibe}
+                  description={playlist.description}
                   gradientClasses={gradients[index % gradients.length]}
                 />
               )

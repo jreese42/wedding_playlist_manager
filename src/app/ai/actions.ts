@@ -19,7 +19,7 @@ interface AISuggestionResponse {
 }
 
 /**
- * Calls Google Gemini API to suggest 5-10 songs based on playlist vibe and user request
+ * Calls Google Gemini API to suggest 5-10 songs based on playlist description and user request
  */
 export async function getSongSuggestionsFromAI(
   playlist: Playlist,
@@ -40,11 +40,10 @@ export async function getSongSuggestionsFromAI(
     .map(t => `${t.title} by ${t.artist}`)
     .join('\n')
 
-  const systemPrompt = `You are a music DJ helping curate a wedding playlist. Your role is to suggest 5-10 songs that would fit the playlist vibe and user request.
+  const systemPrompt = `You are a music DJ helping curate a wedding playlist. Your role is to suggest 5-10 songs that would fit the playlist description and user request.
 
 Playlist Information:
 - Title: ${playlist.title}
-- Vibe: ${playlist.vibe || 'Not specified'}
 - Description: ${playlist.description || 'No description'}
 
 Existing Songs (do NOT suggest these):
@@ -53,7 +52,7 @@ ${existingTracksList || 'No existing songs'}
 User Request: ${userRequest}
 
 Please suggest 5-10 songs that:
-1. Match the playlist's vibe and theme
+1. Match the playlist's description and theme
 2. Are NOT already in the playlist
 3. Fulfill the user's request
 4. Are appropriate for a wedding

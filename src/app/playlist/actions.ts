@@ -5,7 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getSpotifyClient, getSpotifyClientCredentials } from '@/lib/spotify'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
-import { addTrackToSpotify, syncWebappToSpotify } from '@/lib/spotify-sync'
+import { addTrackToSpotify, syncWebappToSpotify, buildTrackRow } from '@/lib/spotify-sync'
 
 export async function moveTrack(playlistId: string, trackId: string, newPosition: number, oldPosition: number) {
     const supabase = await createClient()
@@ -249,21 +249,15 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         position = (maxPosData?.position || 0) + 1
     }
 
-    const { data: insertedTrack, error } = await supabase.from('tracks').insert({
-        playlist_id: playlistId,
-        title: track.name,
-        artist: track.artists.map((a: any) => a.name).join(', '),
-        album: track.album.name,
-        artwork_url: track.album.images[0]?.url,
-        spotify_uri: track.uri,
-        artist_spotify_uri: track.artists[0]?.uri,
-        album_spotify_uri: track.album.uri,
-        duration_ms: track.duration_ms,
-        status: status,
-        position: status === 'active' ? position : null,
-        added_by: status === 'active' ? user.id : null,
-        suggested_by: status === 'suggested' ? user.id : null
-    }).select().single()
+    const { data: insertedTrack, error } = await supabase.from('tracks').insert(
+        buildTrackRow(track, {
+            playlist_id: playlistId,
+            status,
+            position: status === 'active' ? position : null,
+            added_by: status === 'active' ? user.id : null,
+            suggested_by: status === 'suggested' ? user.id : null,
+        })
+    ).select().single()
 
     if (error) {
         console.error('Failed to add track:', error)
@@ -288,7 +282,12 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
                 .single()
 
             if (playlist?.spotify_id && track.uri) {
-                await addTrackToSpotify(playlist.spotify_id, track.uri)
+                const pushed = await addTrackToSpotify(playlist.spotify_id, track.uri)
+                if (pushed) {
+                    // Mark track as pushed to Spotify so deletion detection works
+                    const adminClient = await createAdminClient()
+                    await adminClient.from('tracks').update({ spotify_pushed_at: new Date().toISOString() }).eq('id', insertedTrack.id)
+                }
             }
         } catch (err) {
             console.error('Failed to sync track to Spotify:', err)

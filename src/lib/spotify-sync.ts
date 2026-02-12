@@ -18,6 +18,54 @@ import {
 } from './spotify'
 import { createAdminClient } from './supabase/admin'
 
+// ============================================================
+// Shared Track Row Builder
+// ============================================================
+
+/**
+ * Build a complete track DB row from a Spotify API track object.
+ * Works with both search results (spotify-web-api-node) and raw API items.
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for mapping Spotify data → DB columns.
+ * All code that inserts tracks should use this to guarantee every field is populated.
+ */
+export function buildTrackRow(
+  spotifyTrack: any,
+  overrides: {
+    playlist_id: string
+    status: 'active' | 'suggested' | 'rejected'
+    position: number | null
+    added_by?: string | null
+    suggested_by?: string | null
+  }
+) {
+  return {
+    playlist_id: overrides.playlist_id,
+    title: spotifyTrack.name || 'Unknown',
+    artist: spotifyTrack.artists?.map((a: any) => a.name).join(', ')
+      || spotifyTrack.artist  // fallback for our normalized shape
+      || 'Unknown',
+    album: spotifyTrack.album?.name
+      || (typeof spotifyTrack.album === 'string' ? spotifyTrack.album : null)  // fallback for normalized shape where album is a string
+      || null,
+    artwork_url: spotifyTrack.album?.images?.[0]?.url
+      || spotifyTrack.artwork_url  // fallback for our normalized shape
+      || null,
+    spotify_uri: spotifyTrack.uri || null,
+    artist_spotify_uri: spotifyTrack.artists?.[0]?.uri
+      || spotifyTrack.artist_uri  // fallback
+      || null,
+    album_spotify_uri: spotifyTrack.album?.uri
+      || spotifyTrack.album_uri  // fallback
+      || null,
+    duration_ms: spotifyTrack.duration_ms || 0,
+    status: overrides.status,
+    position: overrides.position,
+    added_by: overrides.added_by ?? null,
+    suggested_by: overrides.suggested_by ?? null,
+  }
+}
+
 /**
  * Extract Spotify URI from various formats
  * e.g., "spotify:track:123" or "https://open.spotify.com/track/123" -> "123"
@@ -121,7 +169,7 @@ export async function reorderTracksInSpotify(
  */
 export async function getTracksFromSpotify(
   playlistSpotifyId: string
-): Promise<Array<{ uri: string; name: string; artist: string; album: string; artwork_url: string | null; duration_ms: number; artist_uri: string | null; album_uri: string | null }>> {
+): Promise<Array<{ uri: string; name: string; artist: string; album: string; artwork_url: string | null; duration_ms: number; artist_uri: string | null; album_uri: string | null; raw: any }>> {
   try {
     const connected = await isSpotifyConnected()
     if (!connected) {
@@ -150,6 +198,7 @@ export async function getTracksFromSpotify(
             duration_ms: item.duration_ms || 0,
             artist_uri: item.artists?.[0]?.uri || null,
             album_uri: item.album?.uri || null,
+            raw: item, // preserve raw Spotify object for buildTrackRow
           })
         }
       }
@@ -166,66 +215,109 @@ export async function getTracksFromSpotify(
 }
 
 /**
- * Sync tracks FROM Spotify TO webapp
- * Non-destructive: 
- * - Songs added on Spotify are added to webapp active list
- * - Songs removed from Spotify are moved to suggested (not deleted)
- * - Webapp is the SOURCE OF TRUTH for active songs
+ * Sync FROM Spotify TO webapp, then push webapp → Spotify.
+ * 
+ * The webapp is ALWAYS the source of truth. This function:
+ * 1. Fetches the current Spotify playlist
+ * 2. Any songs in Spotify but NOT in the webapp → added as SUGGESTIONS
+ * 3. Those new songs are REMOVED from the Spotify playlist (consumed)
+ * 4. Detects tracks deleted from Spotify:
+ *    - If a track has spotify_pushed_at set (was previously pushed) but is
+ *      now missing from Spotify → someone deleted it from Spotify → demote to 'rejected'
+ *    - If a track has spotify_pushed_at null → new in webapp, needs first push
+ * 5. Pushes remaining active tracks to Spotify and marks spotify_pushed_at
+ * 6. Updates sync_timestamp
  */
 export async function syncSpotifyToWebapp(playlistId: string, playlistSpotifyId: string) {
   const supabase = await createAdminClient()
 
   try {
-    // 1. Get current active tracks in webapp
-    const { data: webappTracks } = await supabase
+    // 0. Sync playlist metadata (title, description) from Spotify
+    await syncPlaylistMetadata(playlistId, playlistSpotifyId)
+
+    // 1. Get ALL tracks in webapp (active + suggested + rejected) to know what we already have
+    const { data: allWebappTracks } = await supabase
       .from('tracks')
       .select('id, spotify_uri, status, position')
+      .eq('playlist_id', playlistId)
+
+    const knownUris = new Set(
+      (allWebappTracks || [])
+        .map(t => t.spotify_uri)
+        .filter((uri): uri is string => uri !== null && uri !== undefined)
+    )
+
+    // 2. Get current tracks in Spotify playlist
+    const spotifyTracks = await getTracksFromSpotify(playlistSpotifyId)
+
+    // 3. Find songs in Spotify that we don't know about at all → new suggestions
+    const newFromSpotify = spotifyTracks.filter(t => !knownUris.has(t.uri))
+
+    if (newFromSpotify.length > 0) {
+      // Add them as suggestions in the webapp using buildTrackRow for complete data
+      const suggestionsToInsert = newFromSpotify.map((track) =>
+        buildTrackRow(track.raw, {
+          playlist_id: playlistId,
+          status: 'suggested',
+          position: null,
+        })
+      )
+
+      await supabase.from('tracks').insert(suggestionsToInsert)
+
+      // Remove these new tracks from the Spotify playlist (we've consumed them)
+      const urisToRemove = newFromSpotify.map(t => t.uri)
+      await removeItemsFromPlaylist(playlistSpotifyId, urisToRemove)
+    }
+
+    // 4. Detect deletions from Spotify and push remaining active tracks
+    //    - Tracks with spotify_pushed_at set but missing from Spotify → deleted from Spotify → demote
+    //    - Tracks with spotify_pushed_at null → new in webapp, need first push
+    const spotifyUriSet = new Set(spotifyTracks.map(t => t.uri))
+
+    const { data: activeTracks } = await supabase
+      .from('tracks')
+      .select('id, spotify_uri, spotify_pushed_at')
       .eq('playlist_id', playlistId)
       .eq('status', 'active')
       .order('position', { ascending: true })
 
-    // 2. Get current tracks in Spotify playlist
-    const spotifyTracks = await getTracksFromSpotify(playlistSpotifyId)
-    const spotifyTrackUris = new Set(spotifyTracks.map(t => t.uri))
-
-    // 3. Find songs removed from Spotify (were active in webapp but not in Spotify)
-    // Move these to suggested to avoid data loss
-    const webappActiveUris = new Set(
-      (webappTracks || [])
-        .map(t => t.spotify_uri)
-        .filter((uri): uri is string => uri !== null && uri !== undefined)
-    )
-    const removedFromSpotify = (webappTracks || []).filter(
-      t => t.spotify_uri && !spotifyTrackUris.has(t.spotify_uri)
+    const deletedFromSpotify = (activeTracks || []).filter(
+      t => t.spotify_uri && t.spotify_pushed_at && !spotifyUriSet.has(t.spotify_uri)
     )
 
-    if (removedFromSpotify.length > 0) {
+    // Demote tracks that were deleted from Spotify
+    if (deletedFromSpotify.length > 0) {
+      const deletedIds = deletedFromSpotify.map(t => t.id)
       await supabase
         .from('tracks')
-        .update({ status: 'suggested', position: null })
-        .in('id', removedFromSpotify.map(t => t.id))
-      
-      console.log(`Moved ${removedFromSpotify.length} tracks from Spotify to suggested`)
+        .update({ status: 'rejected', position: null, spotify_pushed_at: null })
+        .in('id', deletedIds)
     }
 
-    // 4. Find songs added in Spotify (not in webapp active, but in Spotify)
-    // Add them to webapp with highest position
-    const addedToSpotify = spotifyTracks.filter(t => !webappActiveUris.has(t.uri))
+    // Re-fetch remaining active tracks after demotions
+    const { data: remainingActive } = await supabase
+      .from('tracks')
+      .select('id, spotify_uri')
+      .eq('playlist_id', playlistId)
+      .eq('status', 'active')
+      .order('position', { ascending: true })
 
-    if (addedToSpotify.length > 0) {
-      const maxPosition = Math.max(...(webappTracks?.map(t => t.position || 0) || [0]))
-      const tracksToAdd = addedToSpotify.map((track, index) => ({
-        playlist_id: playlistId,
-        spotify_uri: track.uri,
-        title: track.name,
-        artist: track.artist,
-        status: 'active' as const,
-        position: maxPosition + index + 1,
-        added_by: null // System sync
-      }))
+    const activeUris = (remainingActive || [])
+      .map(t => t.spotify_uri)
+      .filter((uri): uri is string => uri !== null && uri !== undefined)
 
-      await supabase.from('tracks').insert(tracksToAdd)
-      console.log(`Added ${addedToSpotify.length} tracks from Spotify to webapp`)
+    await replacePlaylistItems(playlistSpotifyId, activeUris)
+
+    // Mark all pushed tracks with spotify_pushed_at
+    const pushedIds = (remainingActive || [])
+      .filter(t => t.spotify_uri)
+      .map(t => t.id)
+    if (pushedIds.length > 0) {
+      await supabase
+        .from('tracks')
+        .update({ spotify_pushed_at: new Date().toISOString() })
+        .in('id', pushedIds)
     }
 
     // 5. Update sync_timestamp
@@ -235,7 +327,6 @@ export async function syncSpotifyToWebapp(playlistId: string, playlistSpotifyId:
       .eq('id', playlistId)
 
   } catch (error) {
-    console.error('Failed to sync Spotify to webapp:', error)
     throw error
   }
 }
@@ -251,19 +342,29 @@ export async function syncWebappToSpotify(playlistId: string, playlistSpotifyId:
     // Get all active tracks in webapp
     const { data: tracks } = await supabase
       .from('tracks')
-      .select('spotify_uri')
+      .select('id, spotify_uri')
       .eq('playlist_id', playlistId)
       .eq('status', 'active')
       .order('position', { ascending: true })
 
-    const trackUris = (tracks || [])
-      .map(t => t.spotify_uri)
-      .filter((uri): uri is string => uri !== null && uri !== undefined)
+    const tracksWithUri = (tracks || []).filter(
+      (t): t is typeof t & { spotify_uri: string } => t.spotify_uri !== null && t.spotify_uri !== undefined
+    )
+    const trackUris = tracksWithUri.map(t => t.spotify_uri)
 
     // Replace Spotify playlist with webapp active tracks
     const success = await reorderTracksInSpotify(playlistSpotifyId, trackUris)
     
     if (success) {
+      // Mark all pushed tracks with spotify_pushed_at
+      const pushedIds = tracksWithUri.map(t => t.id)
+      if (pushedIds.length > 0) {
+        await supabase
+          .from('tracks')
+          .update({ spotify_pushed_at: new Date().toISOString() })
+          .in('id', pushedIds)
+      }
+
       // Update sync_timestamp
       await supabase
         .from('playlists')
@@ -291,20 +392,14 @@ export async function syncPlaylistMetadata(playlistId: string, playlistSpotifyId
     
     const updateData: any = {
       spotify_title: playlist.name,
+      description: playlist.description || null,
+      cover_url: playlist.images?.[0]?.url || null,
     }
 
-    if (playlist.description) {
-      updateData.description = playlist.description
-    }
-
-    if (Object.keys(updateData).length > 0) {
-      await supabase
-        .from('playlists')
-        .update(updateData)
-        .eq('id', playlistId)
-      
-      console.log(`Updated metadata for playlist ${playlistId}`)
-    }
+    await supabase
+      .from('playlists')
+      .update(updateData)
+      .eq('id', playlistId)
     
     return true
   } catch (error) {

@@ -355,7 +355,7 @@ export async function removeItemsFromPlaylist(
   return spotifyFetch(`/playlists/${playlistId}/items`, {
     method: 'DELETE',
     body: {
-      tracks: uris.map((uri) => ({ uri })),
+      items: uris.map((uri) => ({ uri })),
     },
   })
 }

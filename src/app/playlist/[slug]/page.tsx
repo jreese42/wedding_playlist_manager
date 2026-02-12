@@ -125,8 +125,9 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
 
     const { playlist, tracks } = data
 
-    // On-load sync: pull latest changes from Spotify → webapp (secondary sync direction)
-    // This runs as a fire-and-forget background task on each page load
+    // On-load sync: pull latest from Spotify in background.
+    // New suggestions are inserted into the DB, which triggers Supabase Realtime
+    // events that the client subscription picks up — the UI updates automatically.
     if (spotifyConnected && playlist.spotify_id) {
         syncSpotifyToWebapp(playlist.id, playlist.spotify_id).catch((err) => {
             console.error(`[on-load sync] Failed for playlist ${playlist.id}:`, err)

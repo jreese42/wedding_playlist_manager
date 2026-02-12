@@ -17,6 +17,7 @@ export type Database = {
           description: string | null
           vibe: string | null
           spotify_id: string | null
+          cover_url: string | null
           display_order: number | null
           sync_timestamp: string | null
           created_at: string
@@ -28,6 +29,7 @@ export type Database = {
           description?: string | null
           vibe?: string | null
           spotify_id?: string | null
+          cover_url?: string | null
           display_order?: number | null
           sync_timestamp?: string | null
           created_at?: string
@@ -39,6 +41,7 @@ export type Database = {
           description?: string | null
           vibe?: string | null
           spotify_id?: string | null
+          cover_url?: string | null
           display_order?: number | null
           sync_timestamp?: string | null
           created_at?: string
@@ -94,6 +97,7 @@ export type Database = {
           pinned_comment: string | null
           added_by: string | null
           suggested_by: string | null
+          spotify_pushed_at: string | null
           created_at: string
         }
         Insert: {
@@ -112,6 +116,7 @@ export type Database = {
           position?: number | null
           pinned_comment?: string | null
           added_by?: string | null
+          spotify_pushed_at?: string | null
           created_at?: string
         }
         Update: {
@@ -131,6 +136,7 @@ export type Database = {
           pinned_comment?: string | null
           added_by?: string | null
           suggested_by?: string | null
+          spotify_pushed_at?: string | null
           created_at?: string
         }
         Relationships: [

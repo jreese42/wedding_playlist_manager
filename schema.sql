@@ -46,6 +46,7 @@ create table playlists (
   description text,
   vibe text,
   spotify_id text,
+  cover_url text, -- Spotify playlist cover art (expires daily, refreshed on sync)
   display_order integer,
   sync_timestamp timestamp with time zone,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
@@ -69,6 +70,7 @@ create table tracks (
   pinned_comment text,
   added_by uuid references auth.users(id),
   suggested_by text, -- user_id OR 'ai-assistant' for AI-generated suggestions
+  spotify_pushed_at timestamp with time zone, -- when this track was last pushed to Spotify (null = never pushed)
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

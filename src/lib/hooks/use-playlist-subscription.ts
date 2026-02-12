@@ -17,6 +17,28 @@ export function usePlaylistSubscription(playlistId: string, initialTracks: Track
 
     useEffect(() => {
         const supabase = createClient()
+
+        // Re-fetch tracks from DB to catch any inserts that happened
+        // between server render and subscription establishment (e.g. background sync)
+        const refreshTracks = async () => {
+            // Note: can't use profiles:added_by() join because added_by references
+            // auth.users, not profiles. Fetch tracks without profiles and preserve
+            // existing profile data from the initial server render.
+            const { data, error } = await supabase
+                .from('tracks')
+                .select('*')
+                .eq('playlist_id', playlistId)
+                .order('position', { ascending: true, nullsFirst: false })
+            if (error || !data) return
+            // Merge with existing profile data from initial tracks
+            setTracks(currentTracks => {
+                const profileMap = new Map(currentTracks.map(t => [t.id, t.profiles]))
+                return (data as Track[]).map(t => ({
+                    ...t,
+                    profiles: profileMap.get(t.id) || null
+                }))
+            })
+        }
         
         const channel = supabase
             .channel(`tracks-${playlistId}`)
@@ -58,7 +80,11 @@ export function usePlaylistSubscription(playlistId: string, initialTracks: Track
                     }
                 }
             )
-            .subscribe()
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    refreshTracks()
+                }
+            })
 
         return () => {
             supabase.removeChannel(channel)
