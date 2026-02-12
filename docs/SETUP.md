@@ -94,6 +94,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGc...
 # Spotify
 SPOTIFY_CLIENT_ID=your_client_id_here
 SPOTIFY_CLIENT_SECRET=your_client_secret_here
+SPOTIFY_REDIRECT_URI=http://localhost:3000/api/auth/spotify/callback
 
 # Admin Email (the email that will have admin privileges)
 ADMIN_EMAIL=admin@example.com

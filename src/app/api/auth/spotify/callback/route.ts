@@ -6,23 +6,22 @@
  * Only accessible to admin users.
  */
 
-import SpotifyWebApi from 'spotify-web-api-node'
 import { saveSpotifyTokens } from '@/lib/spotify'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { NextRequest, NextResponse } from 'next/server'
 
-const client_id = process.env.SPOTIFY_CLIENT_ID
-const client_secret = process.env.SPOTIFY_CLIENT_SECRET
+const client_id = process.env.SPOTIFY_CLIENT_ID!
+const client_secret = process.env.SPOTIFY_CLIENT_SECRET!
 const redirect_uri = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/api/auth/spotify/callback'
 
 export async function GET(request: NextRequest) {
+  const baseUrl = request.nextUrl.origin
+
   try {
     // Admin-only guard
     const isAdmin = await checkIfAdmin()
     if (!isAdmin) {
-      return NextResponse.redirect(
-        new URL('/?auth_error=Unauthorized%3A+Only+admins+can+connect+Spotify', request.url)
-      )
+      return NextResponse.redirect(new URL('/?auth_error=Unauthorized', baseUrl))
     }
 
     const searchParams = request.nextUrl.searchParams
@@ -30,39 +29,62 @@ export async function GET(request: NextRequest) {
     const error = searchParams.get('error')
 
     if (error) {
-      console.error('Spotify auth error:', error)
+      console.error('[Spotify Callback] Auth error from Spotify:', error)
       return NextResponse.redirect(
-        new URL(`/admin?spotify_error=${encodeURIComponent(error)}`, request.url)
+        new URL(`/admin?spotify_error=${encodeURIComponent(error)}`, baseUrl)
       )
     }
 
     if (!code) {
       return NextResponse.redirect(
-        new URL('/admin?spotify_error=No+code+provided', request.url)
+        new URL('/admin?spotify_error=No+code+provided', baseUrl)
       )
     }
 
-    // Exchange code for access token
-    const spotifyApi = new SpotifyWebApi({
-      clientId: client_id,
-      clientSecret: client_secret,
-      redirectUri: redirect_uri,
+    console.log('[Spotify Callback] Exchanging code for token...')
+    console.log('[Spotify Callback] redirect_uri:', redirect_uri)
+
+    // Exchange code for access token using raw fetch (spotify-web-api-node is abandoned)
+    const tokenResponse = await fetch('https://accounts.spotify.com/api/token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': 'Basic ' + Buffer.from(client_id + ':' + client_secret).toString('base64'),
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri,
+      }),
     })
 
-    const data = await spotifyApi.authorizationCodeGrant(code)
-    const accessToken = data.body['access_token']
-    const refreshToken = data.body['refresh_token']
-    const expiresIn = data.body['expires_in']
+    const tokenData = await tokenResponse.json()
 
-    if (!accessToken || !refreshToken) {
-      throw new Error('No access token or refresh token received')
+    if (!tokenResponse.ok) {
+      console.error('[Spotify Callback] Token exchange failed:', tokenData)
+      const errMsg = tokenData.error_description || tokenData.error || 'Token exchange failed'
+      return NextResponse.redirect(
+        new URL(`/admin?spotify_error=${encodeURIComponent(errMsg)}`, baseUrl)
+      )
     }
 
-    // Fetch the Spotify user profile to store display name
-    spotifyApi.setAccessToken(accessToken)
-    const me = await spotifyApi.getMe()
-    const spotifyUserId = me.body.id
-    const spotifyDisplayName = me.body.display_name || me.body.id
+    const accessToken = tokenData.access_token
+    const refreshToken = tokenData.refresh_token
+    const expiresIn = tokenData.expires_in
+
+    if (!accessToken || !refreshToken) {
+      return NextResponse.redirect(
+        new URL('/admin?spotify_error=No+tokens+received', baseUrl)
+      )
+    }
+
+    // Fetch the Spotify user profile
+    const profileResponse = await fetch('https://api.spotify.com/v1/me', {
+      headers: { 'Authorization': `Bearer ${accessToken}` },
+    })
+    const profile = await profileResponse.json()
+    const spotifyUserId = profile.id
+    const spotifyDisplayName = profile.display_name || profile.id
 
     // Persist tokens to database
     await saveSpotifyTokens(
@@ -75,18 +97,14 @@ export async function GET(request: NextRequest) {
 
     console.log(`✓ Spotify OAuth successful for ${spotifyDisplayName}`)
 
-    // Redirect back to admin with success message
     return NextResponse.redirect(
-      new URL(`/admin?spotify_success=Connected+as+${encodeURIComponent(spotifyDisplayName)}`, request.url)
+      new URL(`/admin?spotify_success=Connected+as+${encodeURIComponent(spotifyDisplayName)}`, baseUrl)
     )
-  } catch (error) {
-    console.error('OAuth callback error:', error)
-    const errorMsg = error instanceof Error ? error.message : 'Unknown error'
+  } catch (error: any) {
+    console.error('[Spotify Callback] Unhandled error:', error)
+    const errorMsg = error?.message || String(error)
     return NextResponse.redirect(
-      new URL(
-        `/admin?spotify_error=${encodeURIComponent('Failed to authenticate: ' + errorMsg)}`,
-        request.url
-      )
+      new URL(`/admin?spotify_error=${encodeURIComponent(errorMsg)}`, baseUrl)
     )
   }
 }
