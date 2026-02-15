@@ -371,7 +371,7 @@ export async function adminUpdateUserProfile(userId: string, displayName: string
     const isAdmin = await checkIfAdmin()
     if (!isAdmin) throw new Error('Unauthorized')
 
-    const supabase = await createClient()
+    const supabase = await createAdminClient()
 
     if (!displayName || displayName.trim().length === 0) {
         throw new Error('Display name cannot be empty')

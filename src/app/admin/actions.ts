@@ -7,6 +7,7 @@ import { buildTrackRow } from '@/lib/spotify-sync'
 import fs from 'fs'
 import path from 'path'
 import { revalidatePath } from 'next/cache'
+import { checkIfAdmin } from '@/lib/auth/helpers'
 
 // Helper to parse frontmatter crudely (since we don't have a library installed for it yet and it's simple)
 function parseFrontmatter(content: string) {
@@ -32,6 +33,9 @@ export type ActionState = {
 }
 
 export async function seedPlaylists(prevState: ActionState): Promise<ActionState> {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) return { success: false, results: [], error: 'Unauthorized: admin access required' }
+
     const logs: string[] = []
     const log = (msg: string) => {
         console.log(msg)
@@ -126,6 +130,9 @@ import { syncPlaylistMetadata } from '@/lib/spotify-sync'
 // ... existing imports
 
 export async function syncTracksFromSpotify(prevState: ActionState): Promise<ActionState> {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) return { success: false, results: [], error: 'Unauthorized: admin access required' }
+
     const connected = await isSpotifyConnected()
     if (!connected) {
         return { success: false, results: [], error: 'Spotify not connected. Connect via the Spotify section above.' }
@@ -220,6 +227,9 @@ export async function syncTracksFromSpotify(prevState: ActionState): Promise<Act
 }
 
 export async function syncMetadataOnly(prevState: ActionState): Promise<ActionState> {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) return { success: false, results: [], error: 'Unauthorized: admin access required' }
+
     const connected = await isSpotifyConnected()
     if (!connected) {
         return { success: false, results: [], error: 'Spotify not connected. Connect via the Spotify section above.' }
@@ -261,6 +271,9 @@ export async function syncMetadataOnly(prevState: ActionState): Promise<ActionSt
  * Disconnect Spotify: removes stored OAuth tokens.
  */
 export async function disconnectSpotify() {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
     await clearSpotifyTokens()
     revalidatePath('/admin')
     return { success: true }

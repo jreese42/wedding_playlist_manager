@@ -4,6 +4,7 @@
  */
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { syncSpotifyToWebapp } from '@/lib/spotify-sync'
 import { NextRequest, NextResponse } from 'next/server'
 
@@ -12,6 +13,16 @@ export async function POST(
   { params }: { params: Promise<{ playlistId: string }> }
 ) {
   try {
+    // Auth check: require an authenticated admin user
+    const authClient = await createClient()
+    const { data: { user } } = await authClient.auth.getUser()
+    if (!user || user.email !== process.env.ADMIN_EMAIL) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     const { playlistId } = await params
 
     // Get the playlist to find its Spotify ID
