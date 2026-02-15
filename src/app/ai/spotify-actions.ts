@@ -24,6 +24,11 @@ export async function searchSpotifyForSongs(
   queries: Array<{ title: string; artist: string }>,
   existingTracks: Track[]
 ): Promise<SongSearchResult[]> {
+  // Auth check: require authenticated user
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized: you must be logged in to search Spotify')
+
   const spotifyApi = new SpotifyWebApi({
     clientId: process.env.SPOTIFY_CLIENT_ID,
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET,

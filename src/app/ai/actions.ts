@@ -26,6 +26,11 @@ export async function getSongSuggestionsFromAI(
   userRequest: string,
   existingTracks: Track[]
 ): Promise<AISuggestionResponse> {
+  // Auth check: require authenticated user
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('Unauthorized: you must be logged in to use AI suggestions')
+
   const apiKey = process.env.GOOGLE_GEMINI_API_KEY
   if (!apiKey) {
     throw new Error('GOOGLE_GEMINI_API_KEY is not configured')

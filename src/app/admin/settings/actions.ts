@@ -6,6 +6,9 @@ import { checkIfAdmin } from '@/lib/auth/helpers'
 import { revalidatePath } from 'next/cache'
 
 export async function getAppSettings() {
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
     const adminSupabase = await createAdminClient()
 
     const { data: settings, error } = await (adminSupabase as any)

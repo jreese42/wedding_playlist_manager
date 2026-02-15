@@ -6,6 +6,7 @@
  */
 
 import { startPeriodicSync } from '@/lib/spotify-periodic-sync'
+import { createClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
 
 // Flag to track if sync service is already running
@@ -13,6 +14,16 @@ let syncServiceRunning = false
 
 export async function GET() {
   try {
+    // Auth check: require authenticated admin user
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.email !== process.env.ADMIN_EMAIL) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
     // Only start if not already running
     if (!syncServiceRunning) {
       syncServiceRunning = true

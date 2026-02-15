@@ -84,10 +84,11 @@ create table audit_log (
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 
--- RLS Policies (Draft)
+-- RLS Policies
 alter table playlists enable row level security;
 create policy "Allow read access to everyone" on playlists for select using (true);
-create policy "Allow write access to authenticated users" on playlists for all using (auth.role() = 'authenticated');
+-- No write policies — only admin (via service role) can INSERT/UPDATE/DELETE playlists.
+-- The Spotify token is tied to the admin account, so only admin manages playlists.
 
 alter table tracks enable row level security;
 create policy "Allow read access to everyone" on tracks for select using (true);
@@ -147,7 +148,8 @@ create table app_settings (
 -- RLS for App Settings
 alter table app_settings enable row level security;
 create policy "App settings are viewable by everyone" on app_settings for select using (true);
-create policy "Only authenticated users can update app settings" on app_settings for all using (auth.role() = 'authenticated');
+-- No write policy = all writes blocked for regular users (RLS denies by default).
+-- Admin writes via service role (createAdminClient), which bypasses RLS entirely.
 
 -- Insert default app settings
 insert into app_settings (key, value, description) values

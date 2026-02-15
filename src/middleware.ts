@@ -1,9 +1,38 @@
-import { type NextRequest } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 import { updateSession } from '@/lib/supabase/middleware'
 
+// Routes that require authentication
+const protectedPaths = ['/admin', '/playlist', '/playlists', '/settings', '/auth/complete-profile']
+// Routes that are only for unauthenticated users
+const authOnlyPaths = ['/login']
+
 export async function middleware(request: NextRequest) {
-  // refresh session if needed
-  const { response } = await updateSession(request)
+  // Refresh session
+  const { response, user } = await updateSession(request)
+  const { pathname } = request.nextUrl
+
+  // Allow demo login without auth
+  if (pathname === '/login/demo') {
+    return response
+  }
+
+  // Redirect unauthenticated users away from protected routes
+  const isProtected = protectedPaths.some(p => pathname.startsWith(p))
+  if (isProtected && !user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('redirect', pathname)
+    return NextResponse.redirect(url)
+  }
+
+  // Redirect authenticated users away from login page
+  const isAuthOnly = authOnlyPaths.some(p => pathname === p)
+  if (isAuthOnly && user) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/'
+    return NextResponse.redirect(url)
+  }
+
   return response
 }
 

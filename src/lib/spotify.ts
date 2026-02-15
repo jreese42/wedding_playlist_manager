@@ -13,10 +13,14 @@ import { createAdminClient } from './supabase/admin'
 
 const client_id = process.env.SPOTIFY_CLIENT_ID
 const client_secret = process.env.SPOTIFY_CLIENT_SECRET
-const redirect_uri = process.env.SPOTIFY_REDIRECT_URI || 'http://localhost:3000/api/auth/spotify/callback'
+const redirect_uri = process.env.SPOTIFY_REDIRECT_URI
 
 if (!client_id || !client_secret) {
   console.warn('Missing Spotify environment variables (CLIENT_ID, CLIENT_SECRET)')
+}
+
+if (!redirect_uri) {
+  console.warn('Missing SPOTIFY_REDIRECT_URI environment variable — Spotify OAuth will not work')
 }
 
 const SPOTIFY_API_BASE = 'https://api.spotify.com/v1'

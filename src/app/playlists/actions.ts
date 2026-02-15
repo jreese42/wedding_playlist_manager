@@ -1,6 +1,8 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { checkIfAdmin } from '@/lib/auth/helpers'
 import { getSpotifyClient } from '@/lib/spotify'
 import { revalidatePath } from 'next/cache'
 
@@ -17,10 +19,10 @@ async function fetchSpotifyPlaylistTitle(spotifyId: string): Promise<string | nu
 }
 
 export async function createPlaylist(name: string, spotifyUri: string) {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
+    const supabase = await createAdminClient()
 
     if (!name || !name.trim()) {
         throw new Error('Playlist name is required')
@@ -65,10 +67,10 @@ export async function createPlaylist(name: string, spotifyUri: string) {
 }
 
 export async function updatePlaylist(playlistId: string, name: string, spotifyUri?: string) {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
+    const supabase = await createAdminClient()
 
     if (!name || !name.trim()) {
         throw new Error('Playlist name is required')
@@ -105,10 +107,10 @@ export async function updatePlaylist(playlistId: string, name: string, spotifyUr
 }
 
 export async function deletePlaylist(playlistId: string) {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
+    const supabase = await createAdminClient()
 
     const { error } = await supabase
         .from('playlists')
@@ -124,10 +126,10 @@ export async function deletePlaylist(playlistId: string) {
 }
 
 export async function reorderPlaylists(playlistOrder: Array<{ id: string; order: number }>) {
-    const supabase = await createClient()
-    
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) throw new Error('Unauthorized')
+    const isAdmin = await checkIfAdmin()
+    if (!isAdmin) throw new Error('Unauthorized: admin access required')
+
+    const supabase = await createAdminClient()
 
     // Update each playlist's display_order
     for (const { id, order } of playlistOrder) {
