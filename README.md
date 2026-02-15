@@ -97,7 +97,7 @@ cd collaborative-playlist-manager
 npm install
 
 # 2. Set up environment variables
-cp .env.example .env.local
+cp .env.local.example .env.local
 # Edit .env.local with your Spotify and Supabase keys
 
 # 3. Run dev server
@@ -123,12 +123,16 @@ Create `.env.local`:
 ```env
 # Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_publishable_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Spotify
-NEXT_PUBLIC_SPOTIFY_CLIENT_ID=your_client_id
+SPOTIFY_CLIENT_ID=your_client_id
 SPOTIFY_CLIENT_SECRET=your_client_secret
+SPOTIFY_REDIRECT_URI=http://localhost:3000/api/auth/spotify/callback
+
+# AI
+GOOGLE_GEMINI_API_KEY=your_gemini_api_key
 
 # Admin Email
 ADMIN_EMAIL=admin@example.com

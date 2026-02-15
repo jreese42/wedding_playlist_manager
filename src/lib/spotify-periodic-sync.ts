@@ -6,8 +6,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { syncSpotifyToWebapp } from './spotify-sync'
 
-let syncInterval: NodeJS.Timeout | null = null
-
 /**
  * Start the periodic sync service
  * Syncs all playlists with Spotify every interval (default: 10 minutes)
@@ -18,7 +16,7 @@ export async function startPeriodicSync(intervalMs: number = 10 * 60 * 1000) {
   await runFullSync()
 
   // Set up recurring syncs
-  syncInterval = setInterval(async () => {
+  setInterval(async () => {
     try {
       await runFullSync()
     } catch (err) {
@@ -27,17 +25,6 @@ export async function startPeriodicSync(intervalMs: number = 10 * 60 * 1000) {
   }, intervalMs)
 
   console.log(`Periodic sync configured for every ${intervalMs / 1000 / 60} minutes`)
-}
-
-/**
- * Stop the periodic sync service
- */
-export function stopPeriodicSync() {
-  if (syncInterval) {
-    clearInterval(syncInterval)
-    syncInterval = null
-    console.log('Periodic sync service stopped')
-  }
 }
 
 /**
@@ -95,29 +82,4 @@ export async function runFullSync() {
   }
 }
 
-/**
- * Manual sync for a single playlist
- * Useful for triggering sync via API or UI
- */
-export async function syncPlaylistManually(playlistId: string) {
-  try {
-    const supabase = await createAdminClient()
 
-    const { data: playlist } = await supabase
-      .from('playlists')
-      .select('id, spotify_id')
-      .eq('id', playlistId)
-      .single()
-
-    if (!playlist || !playlist.spotify_id) {
-      throw new Error('Playlist not found or missing Spotify ID')
-    }
-
-    await syncSpotifyToWebapp(playlistId, playlist.spotify_id)
-    console.log(`✓ Manually synced playlist: ${playlistId}`)
-    return { success: true }
-  } catch (err) {
-    console.error(`✗ Failed to manually sync playlist ${playlistId}:`, err)
-    throw err
-  }
-}
