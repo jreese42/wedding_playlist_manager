@@ -254,20 +254,31 @@ export async function syncSpotifyToWebapp(playlistId: string, playlistSpotifyId:
     const newFromSpotify = spotifyTracks.filter(t => !knownUris.has(t.uri))
 
     if (newFromSpotify.length > 0) {
-      // Add them as suggestions in the webapp using buildTrackRow for complete data
-      const suggestionsToInsert = newFromSpotify.map((track) =>
-        buildTrackRow(track.raw, {
-          playlist_id: playlistId,
-          status: 'suggested',
-          position: null,
-        })
+      // Re-check for URIs already inserted by a concurrent sync instance
+      const candidateUris = newFromSpotify.map(t => t.uri)
+      const { data: alreadyInserted } = await supabase
+        .from('tracks')
+        .select('spotify_uri')
+        .eq('playlist_id', playlistId)
+        .in('spotify_uri', candidateUris)
+      const alreadyInsertedUris = new Set(
+        (alreadyInserted || []).map(t => t.spotify_uri).filter((u): u is string => u !== null)
       )
+      const trulyNew = newFromSpotify.filter(t => !alreadyInsertedUris.has(t.uri))
 
-      await supabase.from('tracks').insert(suggestionsToInsert)
+      if (trulyNew.length > 0) {
+        const suggestionsToInsert = trulyNew.map((track) =>
+          buildTrackRow(track.raw, {
+            playlist_id: playlistId,
+            status: 'suggested',
+            position: null,
+          })
+        )
+        await supabase.from('tracks').insert(suggestionsToInsert)
+      }
 
-      // Remove these new tracks from the Spotify playlist (we've consumed them)
-      const urisToRemove = newFromSpotify.map(t => t.uri)
-      await removeItemsFromPlaylist(playlistSpotifyId, urisToRemove)
+      // Remove all consumed tracks from Spotify (even if we skipped inserting duplicates)
+      await removeItemsFromPlaylist(playlistSpotifyId, candidateUris)
     }
 
     // 4. Detect deletions from Spotify and push remaining active tracks
@@ -286,13 +297,15 @@ export async function syncSpotifyToWebapp(playlistId: string, playlistSpotifyId:
       t => t.spotify_uri && t.spotify_pushed_at && !spotifyUriSet.has(t.spotify_uri)
     )
 
-    // Demote tracks that were deleted from Spotify
+    // Demote tracks that were deleted from Spotify back to 'suggested'
+    // (only if they're still 'active' — user may have already manually demoted them)
     if (deletedFromSpotify.length > 0) {
       const deletedIds = deletedFromSpotify.map(t => t.id)
       await supabase
         .from('tracks')
-        .update({ status: 'rejected', position: null, spotify_pushed_at: null })
+        .update({ status: 'suggested', position: null, spotify_pushed_at: null })
         .in('id', deletedIds)
+        .eq('status', 'active')  // don't override if user already changed status
     }
 
     // Re-fetch remaining active tracks after demotions

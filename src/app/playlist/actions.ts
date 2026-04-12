@@ -86,7 +86,7 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
 
     // 1. Update the track
     const updateData: any = { status }
-    
+
     // If moving to active from a different status, set added_by and calculate new position
     if (status === 'active' && track.status !== 'active') {
         updateData.added_by = user.id
@@ -94,12 +94,18 @@ export async function updateStatus(trackId: string, status: 'active' | 'suggeste
             const { data: maxPosData } = await supabase.from('tracks')
                 .select('position')
                 .eq('playlist_id', track.playlist_id)
-                .not('position', 'is', null) // Ensure we only consider tracks with a position
+                .eq('status', 'active')
+                .not('position', 'is', null)
                 .order('position', { ascending: false })
                 .limit(1)
                 .single()
-            updateData.position = (maxPosData?.position || 0) + 1
+            updateData.position = (maxPosData?.position ?? 0) + 1
         }
+    }
+
+    // If demoting from active, clear the position so it doesn't pollute max-position queries
+    if (status !== 'active' && track.status === 'active') {
+        updateData.position = null
     }
     
     const { error } = await supabase.from('tracks')
@@ -243,10 +249,12 @@ export async function addTrack(playlistId: string, track: any, status: 'active' 
         const { data: maxPosData } = await supabase.from('tracks')
             .select('position')
             .eq('playlist_id', playlistId)
+            .eq('status', 'active')
+            .not('position', 'is', null)
             .order('position', { ascending: false })
             .limit(1)
             .single()
-        position = (maxPosData?.position || 0) + 1
+        position = (maxPosData?.position ?? 0) + 1
     }
 
     const { data: insertedTrack, error } = await supabase.from('tracks').insert(

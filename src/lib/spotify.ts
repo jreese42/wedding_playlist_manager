@@ -367,13 +367,29 @@ export async function removeItemsFromPlaylist(
 /**
  * Replace all items in a playlist (full reorder).
  * Replaces replaceTracksInPlaylist() which used the REMOVED /tracks endpoint.
+ *
+ * Spotify's PUT endpoint accepts max 100 URIs per request.
+ * For larger playlists: PUT the first 100 (clears and sets), then POST the rest in batches.
  */
 export async function replacePlaylistItems(
   playlistId: string,
   uris: string[]
 ): Promise<{ snapshot_id: string }> {
-  return spotifyFetch(`/playlists/${playlistId}/items`, {
+  // PUT with first 100 (or empty) replaces the entire playlist
+  const firstChunk = uris.slice(0, 100)
+  const result = await spotifyFetch(`/playlists/${playlistId}/items`, {
     method: 'PUT',
-    body: { uris },
+    body: { uris: firstChunk },
   })
+
+  // POST remaining URIs in batches of 100, appending at the correct position
+  for (let i = 100; i < uris.length; i += 100) {
+    const chunk = uris.slice(i, i + 100)
+    await spotifyFetch(`/playlists/${playlistId}/items`, {
+      method: 'POST',
+      body: { uris: chunk, position: i },
+    })
+  }
+
+  return result
 }
