@@ -311,19 +311,66 @@ export async function syncSpotifyToWebapp(playlistId: string, playlistSpotifyId:
     // Re-fetch remaining active tracks after demotions
     const { data: remainingActive } = await supabase
       .from('tracks')
-      .select('id, spotify_uri')
+      .select('id, spotify_uri, spotify_pushed_at')
       .eq('playlist_id', playlistId)
       .eq('status', 'active')
       .order('position', { ascending: true })
 
-    const activeUris = (remainingActive || [])
+    // Capture Spotify reorder: if the user reordered tracks directly in Spotify,
+    // update webapp positions to match. Only applies to active tracks that have
+    // been previously pushed (spotify_pushed_at set). Any edge case falls through
+    // silently and the existing webapp order is used.
+    let orderedActive = remainingActive || []
+
+    try {
+      const pushedActive = orderedActive.filter(t => t.spotify_uri && t.spotify_pushed_at)
+
+      if (pushedActive.length > 1) {
+        const pushedUriToTrack = new Map(
+          pushedActive.map(t => [t.spotify_uri as string, t])
+        )
+
+        // Spotify's current order, filtered to only pushed-active tracks
+        const spotifyOrderOfPushed = spotifyTracks.filter(t => pushedUriToTrack.has(t.uri))
+
+        // Count must match — if not, deletion detection may not have fully settled; skip
+        if (spotifyOrderOfPushed.length === pushedActive.length) {
+          const webappUris = pushedActive.map(t => t.spotify_uri as string)
+          const spotifyUris = spotifyOrderOfPushed.map(t => t.uri)
+          const orderChanged = webappUris.some((uri, i) => uri !== spotifyUris[i])
+
+          if (orderChanged) {
+            // Tracks not yet pushed to Spotify keep their relative order, appended after
+            const notPushed = orderedActive.filter(t => !t.spotify_uri || !t.spotify_pushed_at)
+            const reordered = [
+              ...spotifyOrderOfPushed.map(st => pushedUriToTrack.get(st.uri)!),
+              ...notPushed,
+            ]
+
+            await Promise.all(
+              reordered.map((track, idx) =>
+                supabase.from('tracks').update({ position: idx + 1 }).eq('id', track.id)
+              )
+            )
+
+            orderedActive = reordered
+            console.log(`Captured Spotify reorder for playlist ${playlistId}`)
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Failed to capture Spotify reorder for playlist ${playlistId}, using webapp order:`, err)
+      // orderedActive is still the DB-fetched webapp order — existing behavior continues
+    }
+
+    const activeUris = orderedActive
       .map(t => t.spotify_uri)
       .filter((uri): uri is string => uri !== null && uri !== undefined)
 
     await replacePlaylistItems(playlistSpotifyId, activeUris)
 
     // Mark all pushed tracks with spotify_pushed_at
-    const pushedIds = (remainingActive || [])
+    const pushedIds = orderedActive
       .filter(t => t.spotify_uri)
       .map(t => t.id)
     if (pushedIds.length > 0) {
