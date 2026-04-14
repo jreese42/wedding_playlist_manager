@@ -4,7 +4,7 @@ import { notFound, redirect } from 'next/navigation'
 import { PlaylistView } from '@/components/playlist/playlist-view'
 import { checkIfAdmin } from '@/lib/auth/helpers'
 import { isSpotifyConnected } from '@/lib/spotify'
-import { syncSpotifyToWebapp } from '@/lib/spotify-sync'
+import { pullFromSpotify } from '@/lib/spotify-sync'
 
 type Playlist = Database['public']['Tables']['playlists']['Row']
 type Track = Database['public']['Tables']['tracks']['Row'] & {
@@ -129,7 +129,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ slug:
     // New suggestions are inserted into the DB, which triggers Supabase Realtime
     // events that the client subscription picks up — the UI updates automatically.
     if (spotifyConnected && playlist.spotify_id) {
-        syncSpotifyToWebapp(playlist.id, playlist.spotify_id).catch((err) => {
+        pullFromSpotify(playlist.id, playlist.spotify_id).catch((err: unknown) => {
             console.error(`[on-load sync] Failed for playlist ${playlist.id}:`, err)
         })
     }
