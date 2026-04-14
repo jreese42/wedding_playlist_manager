@@ -309,10 +309,12 @@ export async function pullFromSpotify(playlistId: string, playlistSpotifyId: str
   let orderedActive = remainingActive || []
 
   // 6. Capture Spotify reorder → update webapp positions to match
-  //    Only applies to tracks previously pushed (spotify_pushed_at set).
+  //    Uses spotifyUriSet (real Spotify membership) rather than spotify_pushed_at
+  //    so the capture works on the first pull after a reorder, not just the second.
   //    Falls through silently on any error, keeping existing webapp order.
   try {
-    const pushedActive = orderedActive.filter(t => t.spotify_uri && t.spotify_pushed_at)
+    // After deletion detection, remaining active tracks in Spotify are the "pushed" set
+    const pushedActive = orderedActive.filter(t => t.spotify_uri && spotifyUriSet.has(t.spotify_uri))
 
     if (pushedActive.length > 1) {
       const pushedUriToTrack = new Map(pushedActive.map(t => [t.spotify_uri as string, t]))
@@ -325,8 +327,8 @@ export async function pullFromSpotify(playlistId: string, playlistSpotifyId: str
         const orderChanged = webappUris.some((uri, i) => uri !== spotifyUris[i])
 
         if (orderChanged) {
-          // Unpushed tracks keep their relative order, appended after pushed tracks
-          const notPushed = orderedActive.filter(t => !t.spotify_uri || !t.spotify_pushed_at)
+          // Tracks not in Spotify keep their relative webapp order, appended after
+          const notPushed = orderedActive.filter(t => !t.spotify_uri || !spotifyUriSet.has(t.spotify_uri))
           const reordered = [
             ...spotifyOrderOfPushed.map(st => pushedUriToTrack.get(st.uri)!),
             ...notPushed,
